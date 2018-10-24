@@ -1,0 +1,14 @@
+# CMPUT 379 - Assignment 2
+# Student Name: Jacob Bakker
+
+
+a2sdn: a2sdn.cc a2sdn.h a2cont.o a2utility.o a2swi.o a2constants.h
+	g++ -Wall a2sdn.cc a2cont.o a2swi.o a2utility.o -o a2sdn
+a2swi.o: a2swi.cc a2swi.h
+	g++ -Wall -c a2swi.cc
+a2cont.o: a2cont.cc a2cont.h
+	g++ -Wall -c a2cont.cc
+a2utility.o: a2utility.cc a2utility.h
+	g++ -Wall -c a2utility.cc
+clean:
+	rm -f a2sdn *.o
