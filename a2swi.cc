@@ -7,6 +7,16 @@
 #include "a2swi.h"
 #include "a2utility.h"
 #include "a2constants.h"
+class Sw_Exception : public std::exception {
+	std::string _message;
+	public:
+		Sw_Exception(const std::string& message) : _message(message){}
+		
+		virtual const char* what() const noexcept override {
+			return _message.c_str();
+		}
+};
+
 class Switch {
 	public:
 
@@ -22,6 +32,20 @@ class Switch {
 			tfile_name = tfile_name;
 			ip_range = ip_range;
 		}
+
+		Switch(int argc, char *argv) {
+			struct stat buffer;
+			struct ip_range ip_range;
+			int id, swj_id, swk_id;
+			std::string tfile_name;
+			std::string id_str, swj_id_str, swk_id_str, ip_range_str;
+
+			if (argc != 6) {throw Sw_Exception("");}
+			if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_FILE_NOT_FOUND;}
+
+
+
+
 };
 
 int create_switch(int argc, char *argv[], ) {
