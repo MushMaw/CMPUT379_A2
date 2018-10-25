@@ -12,4 +12,7 @@
 #define CONT_MODE std::string ("cont")
 #define NULL_SW_STR std::string ("null")
 
+#define ERR_CONT_CL_FORMAT "format: ./a2sdn cont nSwitch\n"
+#define ERR_SW_CL_FORMAT "format: ./a2sdn swi trafficFile [swj|null] [swk|null] ip_low-ip_high\n"
+
 #endif

@@ -2,13 +2,15 @@
 # Student Name: Jacob Bakker
 
 
-a2sdn: a2sdn.cc a2sdn.h a2cont.o a2utility.o a2swi.o a2constants.h
-	g++ -Wall a2sdn.cc a2cont.o a2swi.o a2utility.o -o a2sdn
-a2swi.o: a2swi.cc a2swi.h
-	g++ -Wall -c a2swi.cc
-a2cont.o: a2cont.cc a2cont.h
-	g++ -Wall -c a2cont.cc
-a2utility.o: a2utility.cc a2utility.h
-	g++ -Wall -c a2utility.cc
+a2sdn: a2sdn.cc a2sdn.h a2_cont.o a2_utility.o a2_SwClass.o a2_ContClass.o a2_constants.h
+	g++ -Wall -g -std=c++11 a2sdn.cc a2_cont.o a2_SwClass.o a2_ContClass.o a2_utility.o -o a2sdn
+a2_SwClass.o: a2_SwClass.cc a2_SwClass.h
+	g++ -Wall -g -std=c++11 -c a2_SwClass.cc
+a2_ContClass.o: a2_ContClass.cc a2_ContClass.h
+	g++ -Wall -g -std=c++11 -c a2_ContClass.cc
+a2_cont.o: a2_cont.cc a2_cont.h
+	g++ -Wall -g -std=c++11 -c a2_cont.cc
+a2_utility.o: a2_utility.cc a2_utility.h
+	g++ -Wall -g -std=c++11 -c a2_utility.cc
 clean:
 	rm -f a2sdn *.o

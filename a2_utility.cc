@@ -4,13 +4,11 @@
  */
 
 
-#include "a2utility.h"
-#include "a2constants.h"
+#include "a2_utility.h"
 
 int get_sw_val(std::string const& arg) {
 	int sw_num;
 	std::string sw_str = SW_MODE, sw_num_substr;
-
 	if (arg.substr(0,2) == sw_str) {
 		sw_num_substr = arg.substr(2, arg.length());
 		sw_num = str_to_pos_int(sw_num_substr);
@@ -28,24 +26,24 @@ int str_to_pos_int(std::string const& str) {
 	return -1;
 }
 
-struct ip_range get_ip_range(std::string const& ip_str) {
-	struct ip_range ip_values;
+IP_Range get_ip_range(std::string const& ip_str) {
+	IP_Range ip_range;
 	std::string ip_val_str;
 	int delim_idx;
 	
-	ip_values.ip_low = -1;
-	ip_values.ip_high = -1;
+	ip_range.low = -1;
+	ip_range.high = -1;
 
-	if ((delim_idx = ip_str.find("-")) == -1) { std::cout << "nodash\n";return ip_values; }
+	if ((delim_idx = ip_str.find("-")) == -1) { std::cout << "nodash\n";return ip_range; }
 
 	ip_val_str = ip_str.substr(0, delim_idx);
-	ip_values.ip_low = str_to_pos_int(ip_val_str);
+	ip_range.low = str_to_pos_int(ip_val_str);
 	ip_val_str = ip_str.substr((delim_idx + 1), ip_str.length());
-	ip_values.ip_high = str_to_pos_int(ip_val_str);
+	ip_range.high = str_to_pos_int(ip_val_str);
 
-	return ip_values;
+	return ip_range;
 }
-
+/**
 std::string get_fifo_name(int reader, int writer) {
 	std::string fifo_name = STR_FIFO_BASE + std.to_string(writer) + "-" + std.to_string(reader);
 	return fifo_name;
@@ -62,4 +60,4 @@ int create_fifo(int reader, int writer) {
 void delete_fifo(int reader, int writer) {
 	std::string fifo_name = get_fifo_name(reader, writer);
 	unlink(fifo_name.c_str());
-}
+}*/

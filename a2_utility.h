@@ -13,10 +13,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "a2_constants.h"
+
 struct ip_range {
-	int ip_low;
-	int ip_high;
+	int low;
+	int high;
 };
+
+typedef struct ip_range IP_Range;
 
 int str_to_pos_int(std::string const& str);
 int get_sw_val(std::string const& arg);
