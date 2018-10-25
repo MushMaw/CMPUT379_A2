@@ -3,8 +3,8 @@
  * Student Name: Jacob Bakker
  */
 
-#if !defined(A2_CONSTANTS_H)
-#define A2_CONSTANTS_H 1
+#if !defined(_A2_CONSTANTS_H)
+#define _A2_CONSTANTS_H 1
 
 #define MAX_NSWITCH 7
 

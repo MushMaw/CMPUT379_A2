@@ -2,14 +2,18 @@
 # Student Name: Jacob Bakker
 
 
-a2sdn: a2sdn.cc a2sdn.h a2_cont.o a2_utility.o a2_SwClass.o a2_ContClass.o a2_constants.h
-	g++ -Wall -g -std=c++11 a2sdn.cc a2_cont.o a2_SwClass.o a2_ContClass.o a2_utility.o -o a2sdn
+a2sdn: a2sdn.cc a2sdn.h a2_cont.o a2_sw.o a2_utility.o a2_SwClass.o a2_RuleClass.o a2_ContClass.o a2_constants.h
+	g++ -Wall -g -std=c++11 a2sdn.cc a2_cont.o a2_sw.o a2_SwClass.o a2_ContClass.o a2_RuleClass.o a2_utility.o -o a2sdn
 a2_SwClass.o: a2_SwClass.cc a2_SwClass.h
 	g++ -Wall -g -std=c++11 -c a2_SwClass.cc
 a2_ContClass.o: a2_ContClass.cc a2_ContClass.h
 	g++ -Wall -g -std=c++11 -c a2_ContClass.cc
+a2_RuleClass.o: a2_RuleClass.cc a2_RuleClass.h
+	g++ -Wall -g -std=c++11 -c a2_RuleClass.cc
 a2_cont.o: a2_cont.cc a2_cont.h
 	g++ -Wall -g -std=c++11 -c a2_cont.cc
+a2_sw.o: a2_sw.cc a2_sw.h
+	g++ -Wall -g -std=c++11 -c a2_sw.cc
 a2_utility.o: a2_utility.cc a2_utility.h
 	g++ -Wall -g -std=c++11 -c a2_utility.cc
 clean:

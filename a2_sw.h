@@ -3,8 +3,8 @@
  * Student Name: Jacob Bakker
  */
 
-#if !defined(A2_CONT_H)
-#define A2_CONT_H 1
+#if !defined(A2_SW_H)
+#define A2_SW_H 1
 
 #include <iostream>
 #include <cstdlib>
@@ -13,10 +13,10 @@
 #include <exception>
 #include <memory>
 
-#include "a2_ContClass.h"
-#include "a2_utility.h"
+#include "a2_SwClass.h"
 #include "a2_constants.h"
+#include "a2_utility.h"
 
-int run_controller(int argc, char *argv[]);
+int run_switch(int argc, char *argv[]);
 
 #endif

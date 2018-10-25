@@ -14,3 +14,8 @@ Controller::Controller(int argc, char *argv[]) {
 
 	nswitch = _nswitch;
 }
+
+int Controller::handle_inc_packets() {
+	int p_count = 0;
+	return p_count;
+}

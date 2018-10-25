@@ -11,9 +11,11 @@ int run_controller(int argc, char *argv[]) {
 		cont = new Controller(argc, argv);
 	} catch (Cont_Exception& e) {
 		std::cout << e.what();
+		return 1;
 	}
 
-	delete cont;
+	
 
+	delete cont;
 	return 0;
 }

@@ -43,9 +43,9 @@ IP_Range get_ip_range(std::string const& ip_str) {
 
 	return ip_range;
 }
-/**
+
 std::string get_fifo_name(int reader, int writer) {
-	std::string fifo_name = STR_FIFO_BASE + std.to_string(writer) + "-" + std.to_string(reader);
+	std::string fifo_name = STR_FIFO_BASE + std::to_string(writer) + std::string ("-") + std::to_string(reader);
 	return fifo_name;
 }
 
@@ -53,11 +53,11 @@ int create_fifo(int reader, int writer) {
 	int new_fifo;
 	std::string fifo_name = get_fifo_name(reader, writer);
 
-	fifo = mkfifo(fifo_name.c_str(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	new_fifo = mkfifo(fifo_name.c_str(), FIFO_PERMS);
 	return new_fifo;
 }
 
 void delete_fifo(int reader, int writer) {
 	std::string fifo_name = get_fifo_name(reader, writer);
 	unlink(fifo_name.c_str());
-}*/
+}

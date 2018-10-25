@@ -27,13 +27,3 @@ Switch::Switch(int argc, char *argv[]) {
 		throw Sw_Exception(ERR_IP_RANGE_INVALID);
 	}
 }
-
-int run_switch(int argc, char *argv[]) {
-	try {
-		std::unique_ptr<Switch> swi (new Switch(argc, argv));
-	} catch (Sw_Exception& e) {
-		std::cout << e.what();
-		return 1;
-	}
-	return 0;
-}
