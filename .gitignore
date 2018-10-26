@@ -1,0 +1,4 @@
+# Executable
+a2sdn
+# Object Files
+obj/*.o
