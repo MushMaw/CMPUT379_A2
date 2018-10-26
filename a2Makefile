@@ -28,4 +28,4 @@ $(EXE): $(OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 clean:
-	$(RM) $(OBJ)
+	$(RM) $(OBJ) $(EXE)
