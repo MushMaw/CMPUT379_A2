@@ -9,6 +9,8 @@
 
 #include "a2_parselib.h"
 
+#define PKT_DELIM std::string (" ")
+
 class Packet {
 	int swi, src_IP, dest_IP;
 
