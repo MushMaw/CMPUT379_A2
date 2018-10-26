@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 
-#include "a2_utility.h"
+#include "a2_parselib.h"
 #include "a2_constants.h"
 
 #define ERR_NSWITCH_NON_POS "nswitch must be a positive value\n"

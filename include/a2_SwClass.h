@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 
-#include "a2_utility.h"
+#include "a2_parselib.h"
 #include "a2_constants.h"
 #include "a2_RuleClass.h"
 

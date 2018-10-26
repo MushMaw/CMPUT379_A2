@@ -4,7 +4,7 @@
  */
 
 
-#include "a2_utility.h"
+#include "a2_parselib.h"
 
 int get_sw_val(std::string const& arg) {
 	int sw_num;
@@ -42,6 +42,19 @@ IP_Range get_ip_range(std::string const& ip_str) {
 	ip_range.high = str_to_pos_int(ip_val_str);
 
 	return ip_range;
+}
+
+int tok_split(std::string& str, std::string& delim, std::vector<std::string> toks) {
+	int tok_start = 0, tok_end = -1, count = 0;
+
+	tok_end = str.find(delim);
+	while (tok_end >= 0) {
+		toks.push_back(str.substr(tok_start, tok_end));
+		tok_start = tok_end + 1;
+		count++;
+		tok_end = str.find(delim, tok_start);
+	}
+	return count;
 }
 
 std::string get_fifo_name(int reader, int writer) {

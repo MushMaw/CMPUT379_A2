@@ -3,13 +3,14 @@
  * Student Name: Jacob Bakker
  */
 
-#if !defined(A2_UTILITY_H)
-#define A2_UTILITY_H 1
+#if !defined(A2_PARSELIB_H)
+#define A2_PARSELIB_H 1
 
 
 #include <iostream>
 #include <exception>
 #include <string>
+#include <vector>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
