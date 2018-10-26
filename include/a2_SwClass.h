@@ -25,6 +25,8 @@
 #define ERR_SW_VAL "Switch number must be an integer from 1 to 7\n"
 #define ERR_IP_RANGE_INVALID "IP values ip_low-ip_high must be positive integers where ip_low < ip_high\n"
 
+enum SwPort {CONT, SWJ, SWK, TFILE, SWPORT_COUNT};
+
 class Sw_Exception : public std::runtime_error {
 	public:
 		Sw_Exception(const char* message) : std::runtime_error(message){}
@@ -37,6 +39,7 @@ class Switch {
 		struct ip_range ip_range;
 		FILE *tfile;
 		std::vector<Rule> flow_table;
+		std::vector<struct pollfd> ports;
 	public:
 		Switch(int argc, char *argv[]);
 };

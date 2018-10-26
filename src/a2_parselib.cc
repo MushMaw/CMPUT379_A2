@@ -44,7 +44,7 @@ IP_Range get_ip_range(std::string const& ip_str) {
 	return ip_range;
 }
 
-int tok_split(std::string& str, std::string& delim, std::vector<std::string>& toks) {
+int tok_split(std::string& str, std::string delim, std::vector<std::string>& toks) {
 	int tok_start = 0, tok_end = -1, count = 0;
 
 	tok_end = str.find(delim);

@@ -15,5 +15,5 @@ int create_fifo(int reader, int writer) {
 
 void delete_fifo(int reader, int writer) {
 	std::string fifo_name = get_fifo_name(reader, writer);
-	unlink(fifo_name.c_str());
+	remove((FIFO_DIR + fifo_name).c_str());
 }

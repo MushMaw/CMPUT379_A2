@@ -2,15 +2,10 @@
 
 
 Rule::Rule(std::string serial_rule) {
-	std::vector<std::string> toks;
-	int tok_start = 0, tok_end = -1;
+	std::vector<std::string> toks, &toks_ptr = toks;
+	int count;
 
-	tok_end = serial_rule.find(RULE_DELIM);
-	while (tok_end >= 0) {
-		toks.push_back(serial_rule.substr(tok_start, tok_end));
-		tok_start = tok_end + 1;
-		tok_end = serial_rule.find(RULE_DELIM, tok_start);
-	}
+	count = tok_split(serial_rule, RULE_DELIM, toks_ptr);
 
 	src_IP.low = std::stoi(toks.at(6));
 	src_IP.high = std::stoi(toks.at(5));

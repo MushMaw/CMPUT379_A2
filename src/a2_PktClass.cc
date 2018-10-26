@@ -5,10 +5,10 @@ Packet::Packet(int swi, int src_IP, int dest_IP) : swi(swi),
 						   dest_IP(dest_IP) {}
 
 Packet::Packet(std::string& ser_pkt) {
-	std::vector<std::string> toks;
+	std::vector<std::string> toks, &toks_ptr = toks;
 	int count;
-
-	count = tok_split(ser_pkt, PKT_DELIM, toks);
+	
+	count = tok_split(ser_pkt, PKT_DELIM, toks_ptr);
 
 	swi = std::stoi(toks.at(2));
 	src_IP = std::stoi(toks.at(1));

@@ -16,6 +16,7 @@ class Packet {
 
 	Packet(int swi, int src_IP, int dest_IP);
 	Packet(std::string& ser_pkt);
+	std::string serialize();
 };
 
 #endif
