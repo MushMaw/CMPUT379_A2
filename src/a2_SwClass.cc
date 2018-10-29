@@ -35,7 +35,7 @@ void Switch::serialize(std::string& ser_sw) {
 	ser_sw += SW_DELIM;
 
 	if (this->swj_id == 0) { ser_sw += NULL_PORT; }
-	else { ser_sw += std::to_string(this->swk_id); }
+	else { ser_sw += std::to_string(this->swj_id); }
 	ser_sw += SW_DELIM;
 
 	if (this->swk_id == 0) { ser_sw += NULL_PORT; }
@@ -43,6 +43,7 @@ void Switch::serialize(std::string& ser_sw) {
 	ser_sw += SW_DELIM;
 
 	serialize_ip_range(ser_ip_range, this->ip_range);
+	ser_sw += ser_ip_range;
 }
 
 Switch::Switch(int argc, char *argv[]){
@@ -68,4 +69,15 @@ Switch::Switch(int argc, char *argv[]){
 	if (ip_range.low == -1 || ip_range.high == -1 || ip_range.low >= ip_range.high) {
 		throw Sw_Exception(ERR_IP_RANGE_INVALID);
 	}
+}
+
+void Switch::run() {
+	Switch *test_sw = NULL;
+	std::string ser_sw ("");
+	this->serialize(ser_sw);
+	std::cout << ser_sw << "\n";
+	test_sw = new Switch(ser_sw);
+	test_sw->serialize(ser_sw);
+
+	std::cout << ser_sw << "\n";
 }

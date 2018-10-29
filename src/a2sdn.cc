@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
 		std::cout << "Running switch...\n";
 		try {
 			new_sw = new Switch(argc, argv);
+			new_sw->run();
 		} catch(Sw_Exception& e) { std::cout << e.what(); }
 		delete new_sw;
 	} else {

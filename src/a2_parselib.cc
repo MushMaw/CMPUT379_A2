@@ -60,6 +60,10 @@ int tok_split(std::string& str, std::string delim, std::vector<std::string>& tok
 		count++;
 		tok_end = str.find(delim, tok_start);
 	}
+	if (tok_end< 0 && (unsigned)tok_start < str.length()) {
+		toks.push_back(str.substr(tok_start, str.length() - tok_start));
+		count++;
+	}
 	return count;
 }
 
