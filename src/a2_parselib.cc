@@ -44,6 +44,12 @@ IP_Range get_ip_range(std::string const& ip_str) {
 	return ip_range;
 }
 
+void serialize_ip_range(std::string& ser_ip, IP_Range ip_range) {
+	ser_ip += std::to_string(ip_range.low);
+	ser_ip += std::string ("-");
+	ser_ip += std::to_string(ip_range.high);
+}
+
 int tok_split(std::string& str, std::string delim, std::vector<std::string>& toks) {
 	int tok_start = 0, tok_end = -1, count = 0;
 

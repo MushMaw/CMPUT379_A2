@@ -9,6 +9,7 @@
 
 #include "a2_parselib.h"
 
+#define MAX_PKT_LEN 128
 #define PKT_DELIM std::string (" ")
 
 enum PktType {OPEN, ACK, QUERY, ADD, RELAY};

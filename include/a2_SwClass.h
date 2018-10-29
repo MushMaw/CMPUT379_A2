@@ -21,6 +21,9 @@
 #define ACT_FORWARD 1
 #define ACT_DROP 2
 
+#define NULL_PORT std::string ("null")
+#define SW_DELIM std::string(" ")
+
 #define ERR_TFILE_NOT_FOUND "trafficfile not found\n"
 #define ERR_SW_VAL "Switch number must be an integer from 1 to 7\n"
 #define ERR_IP_RANGE_INVALID "IP values ip_low-ip_high must be positive integers where ip_low < ip_high\n"
@@ -32,24 +35,21 @@ class Sw_Exception : public std::runtime_error {
 		Sw_Exception(const char* message) : std::runtime_error(message){}
 };
 
-class SwInfo {
-	private:
-		int id, swj_id, swk_id;
-		IP_Range ip_range;
-
-	public:
-		SwInfo(int id, int swj_id, int swk_id, IP_Range ip_range);
-		SwInfo(std::string& ser_sw);
-		std::string serialize();
-};
-
-class Switch : SwInfo {
+class Switch {
 	private:
 		std::string tfile_name;
 		std::vector<Rule> flow_table;
 		std::vector<struct pollfd> ports;
+
 	public:
+		int id, swj_id, swk_id;
+		IP_Range ip_range;
+
 		Switch(int argc, char *argv[]);
+		Switch(int id, int swj_id, int swk_id, IP_Range ip_range);
+		Switch(std::string& ser_sw);
+
+		void serialize(std::string& ser_sw);
 		void run();
 		
 };

@@ -4,9 +4,9 @@ Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 
 Packet::Packet(std::string& pkt) {
 	std::string pkt_type_str, pkt_msg_str;
-	int pkt_type_idx, pkt_type;
+	int type_end_idx, pkt_type;
 
-	pkt_type_idx = pkt.find(PKT_DELIM);
+	type_end_idx = pkt.find(PKT_DELIM);
 	if (type_end_idx == 1) {
 		pkt_type_str = pkt.substr(0, type_end_idx);
 		pkt_type = str_to_pos_int(pkt_type_str);
@@ -24,7 +24,7 @@ void Packet::serialize(std::string& ser_pkt) {
 	std::string pkt_type_str = std::to_string(pkt_type_int);
 	
 
-	ser_pkt += (pkt_type_str + PKT_DELIM + pkt_type_msg); 
+	ser_pkt += (pkt_type_str + PKT_DELIM + this->msg); 
 	ser_pkt_len = ser_pkt.length();
-	ser_pkt.append(MAX_PKT_LEN - ser_pkt_len, '\0') // Pad remaining pkt space with 0's
+	ser_pkt.append(MAX_PKT_LEN - ser_pkt_len, '\0'); // Pad remaining pkt space with 0's
 }

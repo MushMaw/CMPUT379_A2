@@ -29,7 +29,10 @@ typedef struct ip_range IP_Range;
 
 int str_to_pos_int(std::string const& str);
 int get_sw_val(std::string const& arg);
-struct ip_range get_ip_range(std::string const& ip_str);
+
+IP_Range get_ip_range(std::string const& ip_str);
+void serialize_ip_range(std::string& ser_ip, IP_Range ip_range); 
+
 int tok_split(std::string& str, std::string delim, std::vector<std::string>& toks);
 
 
