@@ -1,26 +1,30 @@
 #include "a2_PktClass.h"
 
-Packet::Packet(int swi, int src_IP, int dest_IP) : swi(swi),
-						   src_IP(src_IP),
-						   dest_IP(dest_IP) {}
+Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 
-Packet::Packet(std::string& ser_pkt) {
-	std::vector<std::string> toks, &toks_ptr = toks;
-	int count;
-	
-	count = tok_split(ser_pkt, PKT_DELIM, toks_ptr);
+Packet::Packet(std::string& pkt) {
+	std::string pkt_type_str, pkt_msg_str;
+	int pkt_type_idx, pkt_type;
 
-	swi = std::stoi(toks.at(2));
-	src_IP = std::stoi(toks.at(1));
-	dest_IP = std::stoi(toks.at(1));
+	pkt_type_idx = pkt.find(PKT_DELIM);
+	if (type_end_idx == 1) {
+		pkt_type_str = pkt.substr(0, type_end_idx);
+		pkt_type = str_to_pos_int(pkt_type_str);
+		if (pkt_type >= 0) {
+			this->ptype = static_cast<PktType>(pkt_type);
+		}
+	}
+
+	pkt_msg_str = pkt.substr(type_end_idx + 1, pkt.length() - 2);
+	this->msg = pkt_msg_str;
 }
 
-std::string Packet::serialize() {
-	std::string ser_pkt;
+void Packet::serialize(std::string& ser_pkt) {
+	int ser_pkt_len, pkt_type_int = static_cast<int>(this->ptype);
+	std::string pkt_type_str = std::to_string(pkt_type_int);
+	
 
-	ser_pkt = std::to_string(swi) + PKT_DELIM;
-	ser_pkt += std::to_string(src_IP) + PKT_DELIM;
-	ser_pkt += std::to_string(dest_IP);
-
-	return ser_pkt;
+	ser_pkt += (pkt_type_str + PKT_DELIM + pkt_type_msg); 
+	ser_pkt_len = ser_pkt.length();
+	ser_pkt.append(MAX_PKT_LEN - ser_pkt_len, '\0') // Pad remaining pkt space with 0's
 }

@@ -10,7 +10,7 @@
 #define FIFO_DIR std::string ("tmp/")
 #define FIFO_PERMS S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
 
-std::string get_fifo_name(int reader, int writer);
-int create_fifo(int reader, int writer);
-void delete_fifo(int reader, int writer);
+std::string get_fifo_name(int writer, int reader);
+int create_fifo(int writer, int reader);
+void delete_fifo(int writer, int reader);
 #endif

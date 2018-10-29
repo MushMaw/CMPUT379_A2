@@ -11,12 +11,16 @@
 
 #define PKT_DELIM std::string (" ")
 
-class Packet {
-	int swi, src_IP, dest_IP;
+enum PktType {OPEN, ACK, QUERY, ADD, RELAY};
+enum ActType {FORWARD, DROP};
 
-	Packet(int swi, int src_IP, int dest_IP);
-	Packet(std::string& ser_pkt);
-	std::string serialize();
+class Packet {
+	PktType ptype;
+	std::string msg;
+	
+	Packet(PktType ptype, std::string& msg);
+	Packet(std::string& pkt);
+	void serialize(std::string& ser_pkt);
 };
 
 #endif
