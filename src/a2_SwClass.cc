@@ -73,29 +73,30 @@ Switch::Switch(int argc, char *argv[]){
 }
 
 void Switch::run() {
-	int in_fifo, out_fifo;
+	int in_fifo, out_fifo, kg = 0;
 	std::string ser_sw (""), fifo_name (""), ser_pkt ("");
 	Packet *out_pkt = NULL, *in_pkt = NULL;
 	struct pollfd fds[1], wr_fd;
 
-	get_fifo_name(fifo_name, this->id, this->swk_id);
-	std::cout << "got out fifo name\n";
+	get_fifo_name(fifo_name, this->swk_id, this->id);
+	std::cout << "got out fifo name as" << fifo_name << "\n";
 	in_fifo = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
 	std::cout << "opened read fifo\n";
-	get_fifo_name(fifo_name, this->swk_id, this->id);
-	out_fifo = open(fifo_name.c_str(), O_WRONLY);
-	std::cout << "opended write fifo\n";
 
-	fds[0].fd = out_fifo;
+	get_fifo_name(fifo_name, this->id, this->swk_id);
+	out_fifo = open(fifo_name.c_str(), O_WRONLY);
+	std::cout << "opended write fifo as" << fifo_name << "\n";
+
+	fds[0].fd = in_fifo;
 	fds[0].events = POLLIN;
 
 	this->serialize(ser_sw);
 	out_pkt = new Packet(PT_OPEN, ser_sw);
 	out_pkt->write_to_fifo(out_fifo);
 
-	while (1) {
-		poll(fds, 1, 0);
-		if (fds[1].revents & POLLIN) { break; }
+	while (kg == 0) {
+		if (poll(fds, 1, 0) == -1) {std::cout << "poll error\n";}
+		if (fds[0].revents & POLLIN) { kg = 1; }
 	}
 
 	in_pkt = new Packet();

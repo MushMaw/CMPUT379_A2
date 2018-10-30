@@ -33,7 +33,7 @@ void Packet::serialize(std::string& ser_pkt) {
 size_t Packet::read_from_fifo(int fifo) {
 	std::string ser_pkt ("");
 	char * msg_buffer = new char [PKT_LEN];
-	size_t total_read, num_read;
+	size_t total_read = 0, num_read = 0;
 
 	while (total_read < PKT_LEN + 1) {
 		num_read = read(fifo, msg_buffer, PKT_LEN + 1);
