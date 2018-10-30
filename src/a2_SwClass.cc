@@ -73,10 +73,35 @@ Switch::Switch(int argc, char *argv[]){
 }
 
 void Switch::run() {
-	std::string ser_sw ("");
-	this->serialize(ser_sw);
-	
-	Packet *pkt = new Packet(PT_OPEN, ser_sw);
+	int in_fifo, out_fifo;
+	std::string ser_sw (""), fifo_name (""), ser_pkt ("");
+	Packet *out_pkt = NULL, *in_pkt = NULL;
+	struct pollfd fds[1], wr_fd;
 
-	delete pkt;
+	get_fifo_name(fifo_name, this->id, this->swk_id);
+	std::cout << "got out fifo name\n";
+	in_fifo = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
+	std::cout << "opened read fifo\n";
+	get_fifo_name(fifo_name, this->swk_id, this->id);
+	out_fifo = open(fifo_name.c_str(), O_WRONLY);
+	std::cout << "opended write fifo\n";
+
+	fds[0].fd = out_fifo;
+	fds[0].events = POLLIN;
+
+	this->serialize(ser_sw);
+	out_pkt = new Packet(PT_OPEN, ser_sw);
+	out_pkt->write_to_fifo(out_fifo);
+
+	while (1) {
+		poll(fds, 1, 0);
+		if (fds[1].revents & POLLIN) { break; }
+	}
+
+	in_pkt = new Packet();
+	in_pkt->read_from_fifo(in_fifo);
+	in_pkt->serialize(ser_pkt);
+	std::cout << "Received packet: " << ser_pkt;
+
+	delete in_pkt;
 }

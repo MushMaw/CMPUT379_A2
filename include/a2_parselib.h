@@ -34,6 +34,7 @@ IP_Range get_ip_range(std::string const& ip_str);
 void serialize_ip_range(std::string& ser_ip, IP_Range ip_range); 
 
 int tok_split(std::string& str, std::string delim, std::vector<std::string>& toks);
+void get_fifo_name(std::string& fifo_name, int writer, int reader);
 
 
 #endif

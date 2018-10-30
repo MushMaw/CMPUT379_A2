@@ -2,3 +2,5 @@
 a2sdn
 # Object Files
 obj/*.o
+# Named pipes
+fifo-*

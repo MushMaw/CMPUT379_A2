@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/poll.h>
+#include <fcntl.h>
 
 #include "a2_parselib.h"
 #include "a2_constants.h"
