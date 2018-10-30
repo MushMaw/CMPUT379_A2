@@ -55,7 +55,7 @@ int tok_split(std::string& str, std::string delim, std::vector<std::string>& tok
 
 	tok_end = str.find(delim);
 	while (tok_end >= 0) {
-		toks.push_back(str.substr(tok_start, tok_end));
+		toks.push_back(str.substr(tok_start, tok_end - tok_start));
 		tok_start = tok_end + 1;
 		count++;
 		tok_end = str.find(delim, tok_start);

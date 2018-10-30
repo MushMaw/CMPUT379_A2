@@ -20,6 +20,7 @@ Switch::Switch(std::string& ser_sw) {
 
 	this->id = str_to_pos_int(toks.at(0));
 
+	std::cout << "0:"<<toks.at(0) << "|1:"<<toks.at(1)<<"|2:" << toks.at(2)<<"|3:" << toks.at(3) << "\n";
 	if (toks.at(1) == NULL_PORT) { this->swj_id = 0; }
 	else { this->swj_id = str_to_pos_int(toks.at(1)); }
 	if (toks.at(2) == NULL_PORT) { this->swk_id = 0; }
@@ -72,12 +73,10 @@ Switch::Switch(int argc, char *argv[]){
 }
 
 void Switch::run() {
-	Switch *test_sw = NULL;
 	std::string ser_sw ("");
 	this->serialize(ser_sw);
-	std::cout << ser_sw << "\n";
-	test_sw = new Switch(ser_sw);
-	test_sw->serialize(ser_sw);
+	
+	Packet *pkt = new Packet(PT_OPEN, ser_sw);
 
-	std::cout << ser_sw << "\n";
+	delete pkt;
 }
