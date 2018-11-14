@@ -1,6 +1,6 @@
 // TODO: Print messages as they are received from ports
 
-#include "a2_ContClass.h"
+#include "ContClass.h"
 
 Controller::Controller(int argc, char *argv[]) {
 	int _nswitch;

@@ -5,7 +5,7 @@
 
 // TODO: Print messages as they are received from ports.
 
-#include "a2_SwClass.h"
+#include "SwClass.h"
 
 Switch::Switch(int id, int swj_id, int swk_id, IP_Range ip_range) : id(id),
 								    swj_id(swj_id),

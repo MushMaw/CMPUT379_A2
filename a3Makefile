@@ -1,8 +1,8 @@
-# CMPUT 379 - Assignment 2
+# CMPUT 379 - Assignment 3
 # Student Name: Jacob Bakker
 # CITATION: Makefile structure taken from https://stackoverflow.com/a/30602701
 
-EXE = a2sdn
+EXE = a3sdn
 
 SRC_DIR = src
 OBJ_DIR = obj

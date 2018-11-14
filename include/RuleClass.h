@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-#include "a2_parselib.h"
+#include "parselib.h"
 
 #define RULE_DELIM std::string (" ")
 

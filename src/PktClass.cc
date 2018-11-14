@@ -1,4 +1,4 @@
-#include "a2_PktClass.h"
+#include "PktClass.h"
 
 Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 Packet::Packet() : ptype(PT_UNINIT), msg("") {};

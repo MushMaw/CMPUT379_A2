@@ -9,8 +9,8 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 
-#include "a2_parselib.h"
-#include "a2_constants.h"
+#include "parselib.h"
+#include "constants.h"
 
 #define ERR_NSWITCH_NON_POS "nswitch must be a positive value\n"
 #define ERR_NSWITCH_EXCEED_MAX "Inputted nswitch exceeds maximum allowed switches\n"

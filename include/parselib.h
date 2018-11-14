@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "a2_constants.h"
+#include "constants.h"
 
 #define STR_FIFO_BASE std::string ("fifo-")
 #define FIFO_PERMS S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH

@@ -1,4 +1,4 @@
-#include "a2_RuleClass.h"
+#include "RuleClass.h"
 
 
 Rule::Rule(std::string serial_rule) {

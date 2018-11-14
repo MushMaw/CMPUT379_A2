@@ -4,7 +4,7 @@
  */
 
 
-#include "a2_parselib.h"
+#include "parselib.h"
 
 int get_sw_val(std::string const& arg) {
 	int sw_num;

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "a2_parselib.h"
+#include "parselib.h"
 
 #define PKT_LEN 127
 #define PKT_DELIM std::string (" ")

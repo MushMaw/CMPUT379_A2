@@ -15,10 +15,10 @@
 #include <sys/poll.h>
 #include <fcntl.h>
 
-#include "a2_parselib.h"
-#include "a2_constants.h"
-#include "a2_RuleClass.h"
-#include "a2_PktClass.h"
+#include "parselib.h"
+#include "constants.h"
+#include "RuleClass.h"
+#include "PktClass.h"
 
 #define ACT_FORWARD 1
 #define ACT_DROP 2
