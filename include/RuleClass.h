@@ -23,7 +23,7 @@ class Rule {
 			  pri(pri),
 			  pktCount(pktCount),
 			  actionType(actionType) {}
-		std::string serialize();
+		void serialize(std::string& ser_rule);
 };
 
 #endif

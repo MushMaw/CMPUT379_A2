@@ -2,22 +2,37 @@
 
 #include "ContClass.h"
 
+static volatile bool sig_caught = false;
+
+static void Controller::handle_list_sig() {
+	list_sig_caught = true;
+}
+
 Controller::Controller(int argc, char *argv[]) {
-	int _nswitch;
+	int nswitch, portnum;
 	std::string nswitch_str;
 
-	if (argc != 3) {throw Cont_Exception(ERR_CONT_CL_FORMAT);}
+	if (argc != (CONT_ARG_COUNT + 1)) {throw Cont_Exception(ERR_CONT_CL_FORMAT);}
 	
 	nswitch_str = argv[2];
-	_nswitch = str_to_pos_int(nswitch_str);
+	nswitch = str_to_pos_int(nswitch_str);
 
-	if (_nswitch < 1) {throw Cont_Exception(ERR_NSWITCH_NON_POS);}
-	if (_nswitch > MAX_NSWITCH) {throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX);}
+	if (nswitch < 1) {throw Cont_Exception(ERR_NSWITCH_NON_POS);}
+	if (nswitch > MAX_NSWITCH) {throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX);}
+	this->nswitch = nswitch;
 
-	nswitch = _nswitch;
+	portnum_str = argv[3];
+	portnum = str_to_pos_int(portnum_str);
+
+	if (portnum < 1) { throw Cont_Exception(ERR_PORTNUM); }
+	this->portnum = portnum;
 }
 
 int Controller::handle_inc_packets() {
 	int p_count = 0;
 	return p_count;
+}
+
+void Controller::run() {
+	
 }

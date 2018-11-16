@@ -12,6 +12,8 @@
 #include "parselib.h"
 #include "constants.h"
 
+#define CONT_ARG_COUNT 3
+
 #define ERR_NSWITCH_NON_POS "nswitch must be a positive value\n"
 #define ERR_NSWITCH_EXCEED_MAX "Inputted nswitch exceeds maximum allowed switches\n"
 
@@ -22,8 +24,10 @@ class Cont_Exception : public std::runtime_error {
 
 class Controller {
 	private:
-		int nswitch, running_sw;
-		struct pollfd fds[MAX_NSWITCH];
+		static bool list_sig_caught = false;
+		int nswitch, running_sw_count;
+		std::vector<struct pollfd *> fds[MAX_NSWITCH];
+		std::vector<Switch *> running_sw;
 	public:
 		Controller(int argc, char *argv[]);
 		int handle_inc_packets();
