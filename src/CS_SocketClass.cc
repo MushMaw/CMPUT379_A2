@@ -1,13 +1,18 @@
-#include "tcpserver.h"
+#include "CS_SocketClass.h"
 
-int init_server(int port_num, int num_clients) {
+Cont_Server::Cont_Server(int port_num, int num_clients) {
 	int serv_sock;
 	struct sockaddr_in server;
 
+	this->port_num = port_num;
+	this->num_clients = num_clients;
+	for (int i = 0; i < (num_clients + 1); i++) {
+		this->cl_pfds.push_back(pollfd());
+	}
+
 	serv_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (serv_sock < 0) {
-		//TODO: Err handle
-		exit(1);
+		throw CS_Skt_Exception(ERR_SOCKET_CREATE);
 	}
 
 	server.sin_family = AF_INET;
@@ -15,7 +20,7 @@ int init_server(int port_num, int num_clients) {
 	server.sin_port = htons(port_num);
 
 	if (bind(serv_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		//TODO: Err handle
+		throw CS_Skt_Exception(ERR_SOCKET_BIND);
 		exit(1);
 	}
 
@@ -24,20 +29,20 @@ int init_server(int port_num, int num_clients) {
 	return server;
 }
 
-void accept_n_clients(int serv_sock, int num_clients, std::vector<int>& cl_socks, std::vector<struct pollfd>& cl_pollfds) {
+void Cont_Server::accept_clients() {
 	int n = 1, fromlen = 0, new_cl_sock = 0;
-	struct pollfd * cl_pollfds_ptr = &cl_pollfds[0];
+	struct pollfd * cl_pollfds_ptr = &(this->cl_pollfds[0]);
 	struct sockaddr_in from;
 	while(1) {
 		poll(cl_pollfds_ptr, n, 0);
-		if ((n < num_clients) && (cl_pollfds[0].revents & POLLIN)) {
+		if ((n < num_clients) && (this->cl_pollfds[0].revents & POLLIN)) {
 			fromlen = sizeof(from);
 			new_cl_sock = accept(serv_sock, (struct sockaddr *) &from, &fromlen);
-			cl_pollfds.pushback(new_cl_sock);
+			this->cl_socks.push_back(new_cl_sock);
 
-			cl_pollfds[n].fd = new_cl_sock;
-			cl_pollfds[n].events = POLLIN;
-			cl_pollfds[n].revents = 0;
+			this->cl_pollfds[n].fd = new_cl_sock;
+			this->cl_pollfds[n].events = POLLIN;
+			this->cl_pollfds[n].revents = 0;
 			n++;
 		}
 	}
@@ -49,8 +54,7 @@ int init_client(std::string& address, int port_num) {
 
 	cl_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (cl_sock < 0) {
-		//TODO: e handle
-		exit(1);
+		throw CS_Skt_Exception(ERR_SOCKET_CREATE);
 	}
 
 	memset(&server, 0, sizeof(server));
@@ -58,13 +62,11 @@ int init_client(std::string& address, int port_num) {
 	server.sin_port = htons(port_num);
 
 	if (inet_pton(AF_INET, address, &server.sin_addr) <= 0) {
-		//TODO: e handle
-		exit(1);
+		throw CS_Skt_Exception(ERR_BINARY_CONVERT_ADDR);
 	}
 
 	if (connect(cl_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		//TODO: err handle
-		exit(1);
+		throw CS_Skt_Exception(ERR_SOCKET_CONNECT);
 	}
 
 	return cl_sock;
