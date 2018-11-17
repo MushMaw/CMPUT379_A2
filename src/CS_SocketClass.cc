@@ -48,12 +48,28 @@ void Cont_Server::accept_clients() {
 	}
 }
 
-int init_client(std::string& address, int port_num) {
+void Cont_Server::poll_clients() {
+	struct pollfd * cl_pollfds_ptr = &(this->cl_pollfds[0]);
+	poll(cl_pollfds_ptr, this->num_clients, 0);
+}
+
+int Cont_Server::get_next_ready_cl() {
+	for (int i = 0; i < this->num_clients; i++) {
+		if (this->cl_pfds[i].revents & POLLIN) {
+			this->cl_pfds[i].revents = 0;
+			return i;
+		}
+	}
+	return -1;
+}
+
+Sw_Client::Sw_Client(std::string& address, int port_num) {
 	int cl_sock;
 	struct sockaddr_in server;
 
-	cl_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (cl_sock < 0) {
+	this->port_num = port_num;
+	this->cl_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (this->cl_socket < 0) {
 		throw CS_Skt_Exception(ERR_SOCKET_CREATE);
 	}
 
@@ -65,11 +81,62 @@ int init_client(std::string& address, int port_num) {
 		throw CS_Skt_Exception(ERR_BINARY_CONVERT_ADDR);
 	}
 
-	if (connect(cl_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
+	if (connect(this->cl_socket, (struct sockaddr *) &server, sizeof(server)) < 0) {
 		throw CS_Skt_Exception(ERR_SOCKET_CONNECT);
 	}
 
-	return cl_sock;
+	this->pfd.fd = this->cl_socket;
+	this->pfd.events = POLLIN;
+	this->pfd.revents = 0;
 }
 
+size_t CS_Socket::send_pkt(Packet& pkt, int cl_idx) {
+	int cl_fd = 0;
+	size_t bytes_wrtn;
 
+	cl_fd = this->cl_socks[cl_idx];
+	bytes_wrtn = pkt.write_to_fd(cl_fd);
+	return bytes_wrtn;
+}
+
+size_t CS_Socket::rcv_pkt(Packet& pkt, int cl_idx) {
+	int cl_fd = 0;
+	size_t bytes_read;
+
+	cl_fd = this->cl_socks[cl_idx];
+	bytes_read = pkt.read_from_fd(cl_fd);
+	return bytes_read;
+}
+/**
+int CS_Socket::send_pkt(int dest_sock, std::string& pkt, int pkt_len){
+	int total_sent = 0, bytes_sent = 0;
+
+	while (total_rcv < pkt_len) {
+		bytes_sent = write(dest_sock, &pkt.c_str()[total_sent], pkt_len);
+		if (bytes_sent < 0) {
+			return -1;
+		total_sent += bytes_sent;
+	}
+	return total_sent;
+}
+
+int CS_Socket::rcv_pkt(int send_sock, std::string& pkt, int pkt_len) {
+	int total_rcv = 0, bytes_rcv = 0;
+	char buffer[pkt_len + 1];
+	std::string buffer_op;
+
+	while (total_rcv < pkt_len) {
+		bytes_rcv = read(send_sock, buffer, pkt_len);
+		if (bytes_rcv < 0) {
+			return -1;
+		} else if (bytes_rcv == 0) {
+			break;
+		}
+		buffer_op = buffer;
+		pkt += buffer_op;
+		memset(buffer, 0, pkt_len + 1);
+	}
+	return total_rcv;
+}
+
+*/

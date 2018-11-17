@@ -30,6 +30,7 @@ void Packet::serialize(std::string& ser_pkt) {
 	ser_pkt.append(PKT_LEN - ser_pkt_len, '\0'); // Pad remaining pkt space with 0's
 }
 
+/**
 size_t Packet::read_from_fifo(int fifo) {
 	std::string ser_pkt ("");
 	char * msg_buffer = new char [PKT_LEN];
@@ -60,5 +61,43 @@ void Packet::write_to_fifo(int fifo) {
 		std::cout << "wrote " << num_wrtn << "\n";
 	}
 }
+*/
 
+size_t Packet::read_from_fd(int fd) {
+	std::string ser_pkt(""), buffer_op("");
+	char buffer[PKT_LEN + 1];
+	size_t total_read = 0, bytes_read = 0;
 
+	memset(buffer, 0, PKT_LEN + 1);
+	while (total_read < PKT_LEN + 1) {
+		bytes_read = read(fd, buffer, PKT_LEN + 1);
+		if (bytes_read < 0) {
+			throw Pkt_Exception(ERR_PKT_READ);
+		} else if (bytes_read == 0) {
+			break;
+		}
+		total_read += bytes_read;
+		buffer_op = buffer;
+		ser_pkt += buffer_op;
+		memset(buffer, 0, PKT_LEN + 1);
+	}
+	
+	this->deserialize(ser_pkt);
+	return total_read;
+}
+
+size_t Packet::write_to_fd(int fd) {
+	std::string ser_pkt("");
+	size_t total_wrtn = 0, bytes_wrtn = 0;
+
+	this->serialize(ser_pkt);
+	while(total_wrtn < PKT_LEN + 1) {
+		num_wrtn = write(fd, &ser_pkt.c_str()[total_wrtn], (ser_pkt.length() + 1 - total_wrtn));
+		if (bytes_wrtn < 0) {
+			throw Pkt_Exception(ERR_PKT_WRITE);
+		} else if (bytes_wrtn == 0) {
+			break;
+		}
+	}
+	return total_wrtn;
+}

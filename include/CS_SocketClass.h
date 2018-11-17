@@ -21,9 +21,6 @@ class CS_Skt_Exception: public std::runtime_error {
 }
 
 class ContSw_Socket {
-	public:
-		virtual void write();
-		virtual void read();
 }
 
 class Cont_Server: public ContSw_Socket {
