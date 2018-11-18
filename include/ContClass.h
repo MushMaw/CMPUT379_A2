@@ -28,11 +28,12 @@ class Cont_Exception : public std::runtime_error {
 
 class Controller {
 	private:
-		static bool list_sig_caught = false;
 		int nswitch, running_sw_count;
+		std::vector<Switch *> running_sw;
+
 		Cont_Server * server;
 		ContStats * stats;
-		std::vector<Switch *> running_sw;
+
 	public:
 		Controller(int argc, char *argv[]);
 		int handle_inc_packets();

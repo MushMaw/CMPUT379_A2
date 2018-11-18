@@ -43,6 +43,8 @@ class Switch {
 		std::vector<Rule> flow_table;
 		std::vector<struct pollfd> ports;
 
+		Sw_Client * client;
+
 	public:
 		int id, swj_id, swk_id;
 		IP_Range ip_range;

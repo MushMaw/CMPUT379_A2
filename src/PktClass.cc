@@ -3,6 +3,10 @@
 Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 Packet::Packet() : ptype(PT_UNINIT), msg("") {};
 
+void Packet::set_msg(std::string& new_msg) {
+	this->msg.assign(new_msg);
+}
+
 void Packet::deserialize(std::string& ser_pkt) {
 	std::string pkt_type_str (""), pkt_msg_str ("");
 	int type_end_idx, pkt_type;

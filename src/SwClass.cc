@@ -18,15 +18,17 @@ Switch::Switch(std::string& ser_sw) {
 
 	tok_count = tok_split(ser_sw, SW_DELIM, toks);
 
-	this->id = str_to_pos_int(toks.at(0));
+	try {
+		this->id = str_to_pos_int(toks.at(0));
 
-	std::cout << "0:"<<toks.at(0) << "|1:"<<toks.at(1)<<"|2:" << toks.at(2)<<"|3:" << toks.at(3) << "\n";
-	if (toks.at(1) == NULL_PORT) { this->swj_id = 0; }
-	else { this->swj_id = str_to_pos_int(toks.at(1)); }
-	if (toks.at(2) == NULL_PORT) { this->swk_id = 0; }
-	else { this->swk_id = str_to_pos_int(toks.at(2)); }
+		std::cout << "0:"<<toks.at(0) << "|1:"<<toks.at(1)<<"|2:" << toks.at(2)<<"|3:" << toks.at(3) << "\n";
+		if (toks.at(1) == NULL_PORT) { this->swj_id = 0; }
+		else { this->swj_id = str_to_pos_int(toks.at(1)); }
+		if (toks.at(2) == NULL_PORT) { this->swk_id = 0; }
+		else { this->swk_id = str_to_pos_int(toks.at(2)); }
 
-	this->ip_range = get_ip_range(toks.at(3));
+		this->ip_range = get_ip_range(toks.at(3));
+	} catch (ParseException& e) { throw Sw_Exception(e.what()); }
 }
 
 void Switch::serialize(std::string& ser_sw) {
@@ -50,28 +52,77 @@ void Switch::serialize(std::string& ser_sw) {
 Switch::Switch(int argc, char *argv[]){
 	struct stat buffer;
 	std::string id_str, swj_id_str, swk_id_str, ip_range_str;
+	std::string address_str, portnum_str;
 
-	if (argc != 6) {throw Sw_Exception(ERR_SW_CL_FORMAT);}
+	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT);}
 	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND);}
 
 	tfile_name = argv[2];
 	id_str = argv[1]; swj_id_str = argv[3]; swk_id_str = argv[4];
 	ip_range_str = argv[5];
+	address_str = argv[6];
+	portnum_str = argv[7];
 
-	if ((id = get_sw_val(id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
+	try {	
+		if ((id = get_sw_val(id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
 
-	if (swj_id_str == NULL_PORT) { swj_id = 0; }
-	else if ((swj_id = get_sw_val(swj_id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
+		if (swj_id_str == NULL_PORT) { swj_id = 0; }
+		else if ((swj_id = get_sw_val(swj_id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
 	
-	if (swk_id_str == NULL_PORT) { swk_id = 0; }
-	else if ((swk_id = get_sw_val(swk_id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
+		if (swk_id_str == NULL_PORT) { swk_id = 0; }
+		else if ((swk_id = get_sw_val(swk_id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
 
-	ip_range = get_ip_range(ip_range_str);
-	if (ip_range.low == -1 || ip_range.high == -1 || ip_range.low >= ip_range.high) {
-		throw Sw_Exception(ERR_IP_RANGE_INVALID);
+		ip_range = get_ip_range(ip_range_str);
+		if (ip_range.low == -1 || ip_range.high == -1 || ip_range.low >= ip_range.high) {
+			throw Sw_Exception(ERR_IP_RANGE_INVALID);
+		}
+
+		this->client = new Sw_Client(address_str, portnum);
+
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what()); }
+	catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
+}
+
+void Switch::start() {
+	Packet open_pkt, ack_pkt;
+	std::string ser_sw("");
+
+	this->serialize(ser_sw);
+	open_pkt.ptype = PT_OPEN;
+	open_pkt.set_msg(ser_sw);
+}
+
+void Switch::run() {
+	struct pollfd stdin_pfd[1];
+
+	// Send OPEN packet, then wait for ACK packet
+	this->start();
+
+	// Prepare for polling stdin
+	stdin_pfd[0].fd = STDIN_FILENO;
+	stdin_pfd[0].events = POLLIN;
+	stdin_pfd[0].revents = 0;
+
+	while (1) {
+		// Handle next line (if any) from traffic file
+		this->get_next_traffic_pkt();
+
+		// Poll stdin for user command
+		poll(stdin_pfd, 1, 0);
+		if (stdin_pfd[0].revents & POLLIN) {
+			this->handle_user_cmd();
+		}
+
+		// If user entered "exit" command, exit run loop
+		if (this->keep_running == false) {
+			break;
+		}
+
+		// Poll adjacent switches
 	}
 }
 
+/**
 void Switch::run() {
 	int in_fifo, out_fifo, kg = 0;
 	std::string ser_sw (""), fifo_name (""), ser_pkt ("");
@@ -106,6 +157,7 @@ void Switch::run() {
 
 	delete in_pkt;
 }
+*/
 
 std::string get_fifo_name(int writer, int reader) {
 	std::string fifo_name = STR_FIFO_BASE + std::to_string(writer) + std::string ("-") + std::to_string(reader);

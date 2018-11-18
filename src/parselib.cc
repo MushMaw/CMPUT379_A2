@@ -6,6 +6,7 @@
 
 #include "parselib.h"
 
+
 int get_sw_val(std::string const& arg) {
 	int sw_num;
 	std::string sw_str = SW_MODE, sw_num_substr;
@@ -14,16 +15,16 @@ int get_sw_val(std::string const& arg) {
 		sw_num = str_to_pos_int(sw_num_substr);
 		return sw_num;
 	}
-	return -1;
+	throw Parse_Exception(ERR_SW_NUM_FORMAT);
 }
 
 int str_to_pos_int(std::string const& str) {
 	int output;
 	try { output = std::stoi(str); }
-	catch (std::invalid_argument& e) {return -1;}
-	catch (std::out_of_range& e) {return -1;}
+	catch (std::invalid_argument& e) {throw Parse_Exception(ERR_STOI_INVALID_ARG);}
+	catch (std::out_of_range& e) {throw Parse_Exception(ERR_INT_RANGE);}
 	if (output > -1) {return output;}
-	return -1;
+	throw Parse_Exception(ERR_NOT_POS_INT);
 }
 
 IP_Range get_ip_range(std::string const& ip_str) {
@@ -34,12 +35,14 @@ IP_Range get_ip_range(std::string const& ip_str) {
 	ip_range.low = -1;
 	ip_range.high = -1;
 
-	if ((delim_idx = ip_str.find("-")) == -1) { std::cout << "nodash\n";return ip_range; }
+	if ((delim_idx = ip_str.find("-")) == -1) { throw Parse_Exception(ERR_IP_RANGE_FORMAT); }
 
 	ip_val_str = ip_str.substr(0, delim_idx);
 	ip_range.low = str_to_pos_int(ip_val_str);
 	ip_val_str = ip_str.substr((delim_idx + 1), ip_str.length());
 	ip_range.high = str_to_pos_int(ip_val_str);
+
+	if (ip_range.low < 0 || ip_range.high < 0) { throw Parse_Exception(ERR_IP_RANGE_INT); }
 
 	return ip_range;
 }

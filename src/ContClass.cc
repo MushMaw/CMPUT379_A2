@@ -78,7 +78,7 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	// TODO: Handle query
 }	
 
-void Controller::handle_stdin_cmd() {
+void Controller::handle_user_cmd() {
 	std::string user_input;
 
 	std::cin >> user_input;
@@ -112,10 +112,10 @@ void Controller::run() {
 	stdin_fd[0].revents = 0;
 
 	while(1) {
-		// Poll stdin and execute user command if any
+		// Poll stdin for user command
 		poll(stdin_pfd, 1, 0);
 		if (stdin_pfd[0].revents & POLLIN) {
-			this->handle_stdin_cmd();
+			this->handle_user_cmd();
 		}		
 
 		// If user entered "exit" command, exit run loop

@@ -38,6 +38,7 @@ class Packet {
 		Packet(PktType ptype, std::string& msg);
 		Packet(std::string& pkt);
 
+		void set_msg(std::string& new_msg);
 		void serialize(std::string& ser_pkt);
 		void deserialize(std::string& ser_pkt);
 		size_t read_from_fd(int fd);
