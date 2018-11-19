@@ -95,6 +95,12 @@ void Switch::poll_ports() {
 	poll(port_pfds_ptr, SWPORT_COUNT, 0);
 }
 
+void Switch::print() {
+	std::string ip_range_str;
+	serialize_ip_range(ip_range_str, this->ip_range)
+	fprintf(stdout, SW_PRINT_MSG, this->id, this->swj, this->swk, ip_range_str.c_str());
+}
+
 void Switch::send_pkt(Packet &pkt, SwPort port) {
 	try {
 		switch(port) {
@@ -111,10 +117,14 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 				return;
 	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+
+	this->stats->log_send(pkt);
+	this->print_log(pkt, port, PKT_LOG_RCV_MODE);
 }
 
 void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 	Header header;
+
 	try {
 		switch(port) {
 			case CONT_PORT:
@@ -131,12 +141,7 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 
-	if (pkt.ptype == PT_ADD) {
-		this->handle_rule_pkt(pkt);
-	} else if (pkt.ptype == PT_RELAY) {
-		header = Header(pkt.msg);
-		this->handle_header(header);
-	}
+	this->stats->log_rcv(pkt);
 }
 
 void Switch::start() {
@@ -158,6 +163,7 @@ void Switch::start() {
 }
 
 void Switch::run() {
+	Packet pkt;
 	struct pollfd stdin_pfd[1];
 
 	// Send OPEN packet, then wait for ACK packet
@@ -186,9 +192,10 @@ void Switch::run() {
 		// Poll adjacent switches
 		this->poll_ports();
 		if (this->port_pfds[SWJ_PORT].revents & POLLIN) {
-			this->rcv_pkt();
-		} else if (this->port_pfds[SWK_PORT.revents & POLLIN) {
-			this->rcv_pkt();
+			this->rcv_pkt(pkt, SWJ_PORT);
+		} else if (this->port_pfds[SWK_PORT].revents & POLLIN) {
+			this->rcv_pkt(pkt, SWK_PORT);
+		}
 	}
 }
 

@@ -26,6 +26,7 @@ class Rule {
 	public:
 		IP_Range src_IP, dest_IP;
 		int pri, pktCount, actionType;
+		SwPort forward_port;
 
 		Rule(std::string serial_rule);
 		Rule(IP_Range src_IP, IP_Range dest_IP, int pri, int pktCount, int actionType) 

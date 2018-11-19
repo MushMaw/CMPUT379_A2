@@ -20,6 +20,8 @@
 #define STR_FIFO_BASE std::string ("fifo-")
 #define FIFO_PERMS S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH
 
+#define SW_PRINT_MSG "[sw%d] port1=%d, port2=%d, port3=%s\n"
+
 #define ERR_STOI_INVALID_ARG "Cannot convert value to positive int\n"
 #define ERR_INT_RANGE "Stoi arg out of range\n"
 #define ERR_NOT_POS_INT "Converted value is not a positive integer\n"

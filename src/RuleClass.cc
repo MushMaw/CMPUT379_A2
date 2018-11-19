@@ -41,6 +41,15 @@ bool Rule::is_match(Header& header) {
 	return true;
 }
 
+void Rule::print() {
+	std::string src_ip_str(""), dest_ip_str("");
+	std::string action_str;
+
+	// TODO: Get str for action type and KEEP GOING!!! :D
+	if (this->a
+	fprintf(stdout, RULE_PRINT_MSG, src_ip_str, dest_ip_str,  
+}
+
 Header::Header(std::string& ser_header) {
 	std::vector<std::string> toks, &toks_ptr = toks;
 	int count;

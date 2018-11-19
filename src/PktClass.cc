@@ -105,3 +105,46 @@ size_t Packet::write_to_fd(int fd) {
 	}
 	return total_wrtn;
 }
+
+void Packet::print_log(int src, int dest, PktLogMode mode) {
+	std::string src_str(""), dest_str("");
+	Header header;
+	Switch swi;
+	Rule rule;
+
+	if (mode == PKT_LOG_RCV_MODE) {
+		std::cout << PKT_LOG_RCV_TEXT;
+	} else {
+		std::cout << PKT_LOG_SEND_TEXT;
+	}
+
+	get_src_dest_str(src, src_str);
+	get_src_dest_str(dest, dest_str);
+	fprintf(stdout, PKT_LOG_SRC_DEST_STR, src_str.c_str(), dest_str.c_str());
+	
+	switch(this->ptype) {
+		case PT_OPEN:
+			std::cout  << PTYPE_STR_OPEN;
+			swi = Switch(this->msg);
+			swi.print();
+			break;
+		case PT_ACK:
+			std::cout << PTYPE_STR_ACK << "\n";
+			break;
+		case PT_QUERY:
+			std::cout << PTYPE_STR_QUERY;
+			header = Header(this->msg);
+			header.print();
+			break;
+		case PT_ADD:
+			std::cout << PTYPE_STR_ADD;
+			rule = Rule(this->msg);
+			rule.print();
+			break;
+		case PT_RELAY:
+			std::cout << PTYPE_STR_RELAY;
+			header = Header(this->msg);
+			header.print();
+			break;
+	}
+}

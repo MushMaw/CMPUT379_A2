@@ -46,6 +46,7 @@ class Switch {
 		std::vector<struct pollfd> port_pfds;
 
 		Sw_Client * client;
+		PktStats * stats;
 
 	public:
 		int id, swj_id, swk_id;
