@@ -26,11 +26,13 @@
 #define NULL_PORT std::string ("null")
 #define SW_DELIM std::string(" ")
 
+#define SW_PRINT_INFO "[sw%d] port1=%d, port2=%d, port3=%s\n"
+
 #define ERR_TFILE_NOT_FOUND "trafficfile not found\n"
 #define ERR_SW_VAL "Switch number must be an integer from 1 to 7\n"
 #define ERR_IP_RANGE_INVALID "IP values ip_low-ip_high must be positive integers where ip_low < ip_high\n"
 
-enum SwPort {CONT, SWJ, SWK, IP, SWPORT_COUNT};
+enum SwPort {SWJ_PORT, SWK_PORT, SWPORT_COUNT};
 
 class Sw_Exception : public std::runtime_error {
 	public:
@@ -41,7 +43,7 @@ class Switch {
 	private:
 		std::string tfile_name;
 		std::vector<Rule> flow_table;
-		std::vector<struct pollfd> ports;
+		std::vector<struct pollfd> port_pfds;
 
 		Sw_Client * client;
 

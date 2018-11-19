@@ -90,22 +90,43 @@ Sw_Client::Sw_Client(std::string& address, int port_num) {
 	this->pfd.revents = 0;
 }
 
-size_t CS_Socket::send_pkt(Packet& pkt, int cl_idx) {
+size_t Cont_Server::send_pkt(Packet& pkt, int cl_idx) {
 	int cl_fd = 0;
 	size_t bytes_wrtn;
 
 	cl_fd = this->cl_socks[cl_idx];
-	bytes_wrtn = pkt.write_to_fd(cl_fd);
+	try {
+		bytes_wrtn = pkt.write_to_fd(cl_fd);
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
 	return bytes_wrtn;
 }
 
-size_t CS_Socket::rcv_pkt(Packet& pkt, int cl_idx) {
+size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
 	int cl_fd = 0;
 	size_t bytes_read;
 
 	cl_fd = this->cl_socks[cl_idx];
-	bytes_read = pkt.read_from_fd(cl_fd);
+	try {
+		bytes_read = pkt.read_from_fd(cl_fd);
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
 	return bytes_read;
+
+size_t Sw_Client::rcv_pkt(Packet& pkt) {
+	size_t bytes_read;
+	try {
+		bytes_read = pkt.read_from_fd(this->cl_socket);
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
+	return bytes_read;
+}
+
+size_t Sw_Client::send_pkt(Packet& pkt) {
+	size_t bytes_wrtn;
+	try {
+		bytes_wrtn = pkt.write_to_fd(this->cl_socket);
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
+	return bytes_wrtn;
+}
+
 }
 /**
 int CS_Socket::send_pkt(int dest_sock, std::string& pkt, int pkt_len){

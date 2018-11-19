@@ -17,6 +17,8 @@
 #define CONT_WAIT_FOR_SW_START "Waiting for all switches to start..."
 #define CONT_SW_START_DONE "All switches have started."
 
+#define CONT_PRINT_SW_INFO_HEADER "Switch information (nSwitch=%d):\n"
+
 #define ERR_INVALID_USER_CMD " is not a valid command\n"
 #define ERR_NSWITCH_NON_POS "nswitch must be a positive value\n"
 #define ERR_NSWITCH_EXCEED_MAX "Inputted nswitch exceeds maximum allowed switches\n"

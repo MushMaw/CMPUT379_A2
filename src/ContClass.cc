@@ -41,9 +41,7 @@ void Controller::init_switches() {
 	std::cout << CONT_SW_START_DONE;
 }
 
-void Controller::rcv_pkt(int sw_idx) {
-	Packet pkt();
-
+void Controller::rcv_pkt(Packet& pkt, int sw_idx) {
 	this->server->rcv_pkt(pkt, sw_idx);
 	if (pkt.ptype == PT_OPEN) {
 		this->open_new_sw(pkt, sw_idx);
@@ -92,8 +90,18 @@ void Controller::handle_user_cmd() {
 }
 
 void Controller::list() {
-	// TODO: List switch info
-	
+	int cur_sw_num = 0, i;
+	// List switch info
+	fprintf(stdout, CONT_PRINT_SW_INFO_HEADER, this->nswitch);
+	while (cur_sw_num != this->nswitch) {
+		for (i = 0; i < this->nswitch; i++) {
+			if (this->running_sw->swi == cur_sw_num) {
+				this->running_sw->print();
+				break;
+			}
+		}
+		cur_sw_num++;
+	}
 	// List packet stats
 	this->stats.print();
 }

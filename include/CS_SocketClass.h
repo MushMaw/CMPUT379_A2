@@ -20,10 +20,7 @@ class CS_Skt_Exception: public std::runtime_error {
 		CS_Skt_Exception(const char* message) : std::runtime_error(message){}
 }
 
-class ContSw_Socket {
-}
-
-class Cont_Server: public ContSw_Socket {
+class Cont_Server {
 	private:
 		int serv_socket, port_num, num_clients;
 		std::vector<struct pollfd> cl_pfds;
@@ -34,7 +31,7 @@ class Cont_Server: public ContSw_Socket {
 		
 }
 
-class Sw_Client: public ContSw_Socket {
+class Sw_Client {
 	private:
 		int cl_socket, port_num;
 		struct pollfd pfd;

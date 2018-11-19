@@ -83,6 +83,62 @@ Switch::Switch(int argc, char *argv[]){
 	catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
 }
 
+void Switch::print() {
+	std::string ser_IP;
+
+	serialize_IP_range(ser_IP, this->IP_range);
+	fprintf(stdout, SW_PRINT_INFO, this->swi, this->swj, this->swk, ser_IP);
+}
+
+void Switch::poll_ports() {
+	struct pollfd * port_pfds_ptr = &(this->port_pfds[0]);
+	poll(port_pfds_ptr, SWPORT_COUNT, 0);
+}
+
+void Switch::send_pkt(Packet &pkt, SwPort port) {
+	try {
+		switch(port) {
+			case CONT_PORT:
+				this->client->send_pkt(pkt);
+				break;
+			case SWJ_PORT:
+				pkt.send_to_fd(this->port_pfds[SWJ_PORT]);
+				break;
+			case SWK_PORT:
+				pkt.send_to_fd(this->port_pfds[SWK_PORT]);
+				break;
+			default:
+				return;
+	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+}
+
+void Switch::rcv_pkt(Packet &pkt, SwPort port) {
+	Header header;
+	try {
+		switch(port) {
+			case CONT_PORT:
+				this->client->rcv_pkt(pkt);
+				break;
+			case SWJ_PORT:
+				pkt.read_from_fd(this->port_pfds[SWJ_PORT]);
+				break;
+			case SWK_PORT:
+				pkt.read_from_fd(this->port_pfds[SWK_PORT]);
+				break;
+			default:
+				return;
+	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+
+	if (pkt.ptype == PT_ADD) {
+		this->handle_rule_pkt(pkt);
+	} else if (pkt.ptype == PT_RELAY) {
+		header = Header(pkt.msg);
+		this->handle_header(header);
+	}
+}
+
 void Switch::start() {
 	Packet open_pkt, ack_pkt;
 	std::string ser_sw("");
@@ -90,6 +146,15 @@ void Switch::start() {
 	this->serialize(ser_sw);
 	open_pkt.ptype = PT_OPEN;
 	open_pkt.set_msg(ser_sw);
+
+	this->send_pkt(open_pkt, CONT_PORT);
+	while (1) {
+		this->poll_ports;
+		if (this->port_pfds[CONT_PORT].revents & POLLIN) {
+			this->client->rcv_pkt(ack_pkt)
+			if (ack_pkt.ptype == PT_ACK) { break; }
+		}	
+	}
 }
 
 void Switch::run() {
@@ -119,6 +184,11 @@ void Switch::run() {
 		}
 
 		// Poll adjacent switches
+		this->poll_ports();
+		if (this->port_pfds[SWJ_PORT].revents & POLLIN) {
+			this->rcv_pkt();
+		} else if (this->port_pfds[SWK_PORT.revents & POLLIN) {
+			this->rcv_pkt();
 	}
 }
 
