@@ -148,3 +148,5 @@ void Packet::print_log(int src, int dest, PktLogMode mode) {
 			break;
 	}
 }
+
+void Packet::get_src_dest_str(

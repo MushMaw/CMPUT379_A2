@@ -1,11 +1,28 @@
 #include "RuleClass.h"
 
+/**
+ * Rule constructors
+ */
+Rule::Rule(std::string& ser_rule) {
+	this->deserialize(ser_rule);
+}
 
-Rule::Rule(std::string serial_rule) {
+/**
+ * Function: deserialize
+ * -----------------------
+ * Sets Rule attributes to those specified in serialized Rule string.
+ *
+ * Parameters:
+ * 	- ser_rule: Serialized Rule object
+ * Return Value: None
+ * Throws:
+ *	- Rule_Exception
+ */
+void Rule::deserialize(std::string ser_rule) {
 	std::vector<std::string> toks, &toks_ptr = toks;
 	int count;
 
-	count = tok_split(serial_rule, RULE_DELIM, toks_ptr);
+	count = tok_split(ser_rule, RULE_DELIM, toks_ptr);
 	if (count != 7) { throw Rule_Exception(ERR_RULE_TOK_COUNT); }
 
 	this->src_ip.low = std::stoi(toks.at(0));
@@ -19,6 +36,16 @@ Rule::Rule(std::string serial_rule) {
 	this->pkt_count = std::stoi(toks.at(6));
 }
 
+/**
+ * Function: serialize
+ * -----------------------
+ * Serializes Rule object and assigns result to "ser_rule".
+ *
+ * Parameters:
+ * 	- ser_rule: Stores serialized Rule object
+ * Return Value: None
+ * Throws: None
+ */
 void Rule::serialize(std::string& ser_rule) {
 	ser_rule += std::to_string(src_ip.low) + RULE_DELIM;
 	ser_rule += std::to_string(src_ip.high) + RULE_DELIM;
@@ -31,6 +58,18 @@ void Rule::serialize(std::string& ser_rule) {
 	ser_rule += std::to_string(pktCount);
 }
 
+/**
+ * Function: is_match
+ * -----------------------
+ * Returns true if Header source and destination IP values are in the IP ranges
+ * given by the Rule object.
+ *
+ * Parameters:
+ * 	- header: Header object.
+ * Return Value:
+ * 	- True if Header IP values are in range, false otherwise.
+ * Throws: None
+ */
 bool Rule::is_match(Header& header) {
 	if (header.src_ip < this->src_ip.low || this->src_ip.high < header.src_ip) {
 		return false;
@@ -41,10 +80,28 @@ bool Rule::is_match(Header& header) {
 	return true;
 }
 
+/**
+ * Function: add_pkt
+ * -----------------------
+ * Increments packet counter.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
 void Rule::add_pkt() {
 	this->pkt_count++;
 }
 
+/**
+ * Function: print
+ * -----------------------
+ * Prints Rule attributes to stdout.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
 void Rule::print() {
 	std::string src_ip_str(""), dest_ip_str("");
 	std::string action_str;

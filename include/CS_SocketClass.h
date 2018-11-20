@@ -22,7 +22,8 @@ class CS_Skt_Exception: public std::runtime_error {
 
 class Cont_Server {
 	private:
-		int serv_socket, port_num, num_clients;
+		int serv_sock, port_num, num_clients;
+		std::vector<struct pollfd> server_pfd;
 		std::vector<struct pollfd> cl_pfds;
 		std::vector<int> cl_socks;
 	public:

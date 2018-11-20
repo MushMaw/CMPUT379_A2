@@ -3,8 +3,8 @@
  * Student Name: Jacob Bakker
  */
 
-#if !defined(A2_PARSELIB_H)
-#define A2_PARSELIB_H 1
+#if !defined(PARSELIB_H)
+#define PARSELIB_H 1
 
 
 #include <iostream>
@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "constants.h"
+#include "IPRangeClass.h"
 
 #define STR_FIFO_BASE std::string ("fifo-")
 #define FIFO_PERMS S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH
@@ -33,13 +34,6 @@ class Parse_Exception : public std::runtime_error {
 	public:
 		Parse_Exception(const char* message) : std::runtime_error(message){}
 };
-
-struct ip_range {
-	int low;
-	int high;
-};
-
-typedef struct ip_range IP_Range;
 
 int str_to_pos_int(std::string const& str);
 int get_sw_val(std::string const& arg);

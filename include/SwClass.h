@@ -51,6 +51,7 @@ class Switch {
 		std::vector<Rule *> flow_table;
 		std::vector<struct pollfd> port_pfds;
 		ifstream tfile;
+		bool keep_running;
 
 		Sw_Client * client;
 		PktStats * stats;

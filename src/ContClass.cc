@@ -2,30 +2,55 @@
 
 #include "ContClass.h"
 
-
+/**
+ * Function: Controller constructor
+ * -----------------------
+ * Initializes Controller object from command line arguments.
+ *
+ * Parameters:
+ * 	- argc: Number of arguments.
+ *	- argv: Array of arguments.
+ * Return Value: None
+ * Throws:
+ *	- Cont_Exception
+ */
 Controller::Controller(int argc, char *argv[]) {
-	int nswitch, portnum;
-	std::string nswitch_str;
+	int nswitch;
+	std::string nswitch_str(""), portnum_str("");
 
 	if (argc != (CONT_ARG_COUNT + 1)) {throw Cont_Exception(ERR_CONT_CL_FORMAT);}
 	
-	nswitch_str = argv[2];
-	nswitch = str_to_pos_int(nswitch_str);
+	try {
+		nswitch_str = argv[2];
+		nswitch = str_to_int(nswitch_str);
 
-	if (nswitch < 1) {throw Cont_Exception(ERR_NSWITCH_NON_POS);}
-	if (nswitch > MAX_NSWITCH) {throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX);}
-	this->nswitch = nswitch;
+		if (nswitch < 1) { throw Cont_Exception(ERR_NSWITCH_NON_POS); }
+		if (nswitch > MAX_NSWITCH) { throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX); }
+		this->nswitch = nswitch;
 
-	portnum_str = argv[3];
-	portnum = str_to_pos_int(portnum_str);
+		portnum_str = argv[3];
+		this->portnum = str_to_int(portnum_str);
 
-	try:
 		this->server = new Cont_Server(port_num, nswitch);
-	catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(); }
+	} catch (Parse_Exception& e) { throw Cont_Exception(e.what()); }
+	  catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what()); }
 
 	this->stats = new ContStats();
 }
 
+/**
+ * Function: init_switches
+ * -----------------------
+ * Initializes Switches by repeatedly polling for OPEN packets, saving the
+ * Switch information from the packet, and responding with an ACK Packet to
+ * each switch.
+ * The Controller will keep polling from OPEN packets until all Switches are
+ * running.
+ *
+ * Parameters: None 
+ * Return Value: None
+ * Throws: None
+ */
 void Controller::init_switches() {
 	int next_ready_sw = -1;	
 
@@ -35,14 +60,30 @@ void Controller::init_switches() {
 		next_ready_sw = this->server->get_next_ready_cl();
 
 		if (next_ready_sw >= 0 && this->running_sw[next_ready_sw] == NULL) {
-			open_new_sw(next_ready_sw);			
+			this->rcv_pkt(sw_idx);		
 		}
 	}
 	std::cout << CONT_SW_START_DONE;
 }
 
-void Controller::rcv_pkt(Packet& pkt, int sw_idx) {
+/**
+ * Function: rcv_pkt
+ * -----------------------
+ * Retrieves Packet sent by Switch at index "sw_idx", then calls appropriate function
+ * for handling the Packet. 
+ * The received Packet is printed to stdout and its type is logged.
+ *
+ * Parameters:
+ * 	- sw_idx: Index of Switch in Controller's list of running Switches
+ * Return Value: None
+ * Throws:
+ *	- Cont_Exception
+ */
+void Controller::rcv_pkt(int sw_idx) {
+	// Send Packet through server
 	this->server->rcv_pkt(pkt, sw_idx);
+
+	// Handle packet.
 	if (pkt.ptype == PT_OPEN) {
 		this->open_new_sw(pkt, sw_idx);
 	} else if (pkt.ptype == PT_QUERY) {
@@ -51,14 +92,40 @@ void Controller::rcv_pkt(Packet& pkt, int sw_idx) {
 		throw Cont_Exception(ERR_INVALID_PKT_RCV);
 	}
 
+	// Print receieved packet and log its type.
 	this->stats->log_rcv(pkt.ptype);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Returns 
+ *
+ * Parameters:
+ * 	- str: 
+ * Return Value:
+ * 	- 
+ * Throws:
+ *	- 
+ */
 void Controller::send_pkt(Packet& pkt, int sw_idx) {
 	this->server->send_pkt(pkt, sw_idx);
+	
 	this->stats->log_send(pkt.ptype);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Returns 
+ *
+ * Parameters:
+ * 	- str: 
+ * Return Value:
+ * 	- 
+ * Throws:
+ *	- 
+ */
 void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
 	Packet ack_pkt(PT_ACK, PKT_EMPTY_MSG);
 	Switch * new_sw = NULL;
@@ -72,6 +139,18 @@ void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
 	}
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Returns 
+ *
+ * Parameters:
+ * 	- str: 
+ * Return Value:
+ * 	- 
+ * Throws:
+ *	- 
+ */
 void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	Header header();
 	int dest_sw = -1, dest_sw_idx = -1, act_val;
@@ -114,6 +193,18 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	this->send_pkt(add_pkt, sw_idx);
 }	
 
+/**
+ * Function: 
+ * -----------------------
+ * Returns 
+ *
+ * Parameters:
+ * 	- str: 
+ * Return Value:
+ * 	- 
+ * Throws:
+ *	- 
+ */
 void Controller::handle_user_cmd() {
 	std::string user_input;
 
@@ -127,6 +218,18 @@ void Controller::handle_user_cmd() {
 	}
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Returns 
+ *
+ * Parameters:
+ * 	- str: 
+ * Return Value:
+ * 	- 
+ * Throws:
+ *	- 
+ */
 void Controller::list() {
 	int cur_sw_num = 0, i;
 	// List switch info
@@ -144,6 +247,18 @@ void Controller::list() {
 	this->stats.print();
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Returns 
+ *
+ * Parameters:
+ * 	- str: 
+ * Return Value:
+ * 	- 
+ * Throws:
+ *	- 
+ */
 void Controller::run() {
 	int next_ready_sw;
 	struct pollfd stdin_pfd[1];	

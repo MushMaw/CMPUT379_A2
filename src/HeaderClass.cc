@@ -1,6 +1,22 @@
 #include "HeaderClass.h"
 
+/**
+ * Header Constructors
+ */
 Header::Header(std::string& ser_header) {
+	this->deserialize(ser_header);
+}
+
+/**
+ * Function: deserialize 
+ * -----------------------
+ * Sets Header's attributes to those specified in serialized Header string.
+ *
+ * Parameters:
+ * 	- ser_header: Serialized Header object
+ * Return Value: None
+ */
+void Header::deserialize(std::string& ser_header) {
 	std::vector<std::string> toks, &toks_ptr = toks;
 	int count;
 
@@ -14,12 +30,31 @@ Header::Header(std::string& ser_header) {
 	} catch (Parse_Exception& e) { throw Header_Exception(e.what()); }
 }
 
+
+/**
+ * Function: serialize
+ * -----------------------
+ * Serializes Header object and assigns result to "ser_header".
+ *
+ * Parameters:
+ * 	- ser_header: Stores serialized Header object.
+ * Return Value: None
+ */
 void Header::serialize(std::string& ser_header) {
+	ser_header.clear();
 	ser_header += std::to_string(this-sw) + HEADER_DELIM;
 	ser_header += std::to_string(this->src_ip) + HEADER_DELIM;
 	ser_header += std::to_string(this->dest_ip);
 }
 
+/**
+ * Function: print
+ * -----------------------
+ * Prints Header attributes to stdout.
+ *
+ * Parameters: None
+ * Return Value: None
+ */
 void Header::print() {
 	fprintf(stdout, HEADER_PRINT_MSG, this->src_ip, this->dest_ip);
 }

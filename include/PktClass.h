@@ -22,6 +22,8 @@
 #define PKT_LOG_SEND_TEXT "Transmitted: "
 #define PKT_LOG_SRC_DEST_STR "(src= %s, dest= %s) "
 
+#define PKT_LOG_CONT std::string("cont")
+
 #define PTYPE_STR_OPEN "[OPEN]"
 #define PTYPE_STR_ACK "[ACK]"
 #define PTYPE_STR_QUERY "[QUERY]"

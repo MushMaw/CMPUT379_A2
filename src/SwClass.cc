@@ -355,8 +355,3 @@ void Switch::run() {
 	delete in_pkt;
 }
 */
-
-std::string get_fifo_name(int writer, int reader) {
-	std::string fifo_name = STR_FIFO_BASE + std::to_string(writer) + std::string ("-") + std::to_string(reader);
-	return fifo_name;
-}
