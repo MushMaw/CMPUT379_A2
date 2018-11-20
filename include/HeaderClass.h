@@ -9,10 +9,6 @@
 
 #define HEADER_PRINT_MSG "header= (srcIP= %d, destIP= %d)\n"
 
-typedef std::chrono::high_resolution_clock HR_Clock;
-typedef std::chrono::milliseconds millisec;
-typedef std::chrono::duration<int> duration;
-
 class Header {
 	public:
 		int swi, src_IP, dest_IP, timeout;

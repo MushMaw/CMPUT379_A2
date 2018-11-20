@@ -3,6 +3,10 @@
 
 #include <chrono>
 
+typedef std::chrono::high_resolution_clock HR_Clock;
+typedef std::chrono::milliseconds millisec;
+typedef std::chrono::duration<int> duration;
+
 class Timer {
 	private:
 		high_resolution_clock::time_point start_time;
