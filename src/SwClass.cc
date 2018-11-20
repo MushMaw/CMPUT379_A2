@@ -77,7 +77,8 @@ Switch::Switch(int argc, char *argv[]){
 		if (ip_range.low == -1 || ip_range.high == -1 || ip_range.low >= ip_range.high) {
 			throw Sw_Exception(ERR_IP_RANGE_INVALID);
 		}
-
+		
+		this->keep_running = true;
 		this->client = new Sw_Client(address_str, portnum);
 		this->timer = new Timer();
 		this->stats = new PktStats();
@@ -111,10 +112,10 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 				this->client->send_pkt(pkt);
 				break;
 			case SWJ_PORT:
-				pkt.send_to_fd(this->port_pfds[SWJ_PORT]);
+				pkt.send_to_fd(this->port_pfds[SWJ_PORT - 1]);
 				break;
 			case SWK_PORT:
-				pkt.send_to_fd(this->port_pfds[SWK_PORT]);
+				pkt.send_to_fd(this->port_pfds[SWK_PORT - 1]);
 				break;
 			default:
 				return;
@@ -144,7 +145,9 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 
+	// Print log of received packet and record newly-received packet type in stats
 	this->stats->log_rcv(pkt);
+	this->print_log(pkt, port, PKT_LOG_SEND_MODE);
 }
 
 void Switch::start() {
@@ -165,10 +168,26 @@ void Switch::start() {
 	}
 }
 
+void Switch::list() {
+	int ft_len = this->flow_table.size();
+
+	// Print flow table entries
+	std::cout << SW_PRINT_FT_TABLE_TITLE;
+	for (int i = 0; i < ft_len; i++) {
+		fprintf(stdout, SW_PRINT_FT_TABLE_IDX, i);
+		this->flow_table[i]->print();
+	}
+
+	// Print packet stats
+	this->stats->print();
+}
+
 void Switch::read_next_traffic_line() {
 	std::string line("");
 	char c;
 
+	// Check if end of traffic file has been reached.
+	if (this->tflie.eof()) { return; }
 	// If next line is empty or is a comment (starts with '#'), do nothing.
 	c = this->tfile.peak();
 	std::getline(line, this->tfile);
@@ -201,11 +220,41 @@ void Switch::handle_header(Header &header) {
 }
 
 void Switch::query_cont(Header& header) {
+	Packet que_pkt(), add_pkt();
+	Rule * new_rule();
+	std::string que_msg;
 
+	que_pkt.ptype = PT_QUERY;
+	header.serialize(que_msg);
+	que_pkt.msg = que_msg;
+
+	this->send_pkt(que_pkt, CONT_PORT);
+	while (1) {
+		if (this->is_pkt_from_cont()) {
+			this->client->rcv_pkt(add_pkt);
+			new_rule = new Rule(add_pkt.msg);
+			this->flow_table.pushback(new_rule)
+			return this->flow_table.size();
+		}
+	}
 }
 
 void Switch::execute_rule(Header& header, int rule_idx) {
+	Rule * rule;
+	Packet relay_pkt();
+	std::string ser_header;
 
+	// If action type is FORWARD, send header to specified port
+	rule = this->flow_table[rule_idx];
+	if (rule->atype == AT_FORWARD) {
+		relay_pkt.ptype = PT_RELAY;
+		header.serialize(ser_header);
+		relay_pkt.msg = ser_header;
+		this->send_pkt(relay_pkt, rule->forward_port);
+	}
+	
+	// Increment packet count of rule
+	this->flow_table[rule_idx]->pkt_count++;
 }
 
 void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, int aval, int pri) {
@@ -215,6 +264,19 @@ void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, int 
 
 void Switch::start_traffic_delay(int delay) {
 	this->timer->start(delay);
+}
+
+void Switch::handle_user_cmd() {
+	std::string user_cmd("");
+
+	std::cin >> user_cmd;
+	if (user_cmd == SW_USER_LIST_CMD) {
+		this->list();
+	} else if (user_cmd == SW_USER_EXIT_CMD) {
+		this->keep_running = false;
+	} else {
+		std::cout << user_cmd << ERR_INVALID_SW_USER_CMD;
+	}
 }
 
 void Switch::run() {

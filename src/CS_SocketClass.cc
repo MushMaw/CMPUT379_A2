@@ -53,9 +53,16 @@ void Cont_Server::poll_clients() {
 	poll(cl_pollfds_ptr, this->num_clients, 0);
 }
 
+bool Cont_Server::client_is_ready(int cl_idx) {
+	if (this->cl_pfds[i].revents & POLLIN) {
+		this->cl_pfds[i].revents = 0;
+		return true;
+	} else { return false; }
+}
+
 int Cont_Server::get_next_ready_cl() {
 	for (int i = 0; i < this->num_clients; i++) {
-		if (this->cl_pfds[i].revents & POLLIN) {
+		if (this->client_is_ready(i)) {
 			this->cl_pfds[i].revents = 0;
 			return i;
 		}
@@ -66,6 +73,7 @@ int Cont_Server::get_next_ready_cl() {
 Sw_Client::Sw_Client(std::string& address, int port_num) {
 	int cl_sock;
 	struct sockaddr_in server;
+	struct pollfd cont_pfd;
 
 	this->port_num = port_num;
 	this->cl_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -85,9 +93,10 @@ Sw_Client::Sw_Client(std::string& address, int port_num) {
 		throw CS_Skt_Exception(ERR_SOCKET_CONNECT);
 	}
 
-	this->pfd.fd = this->cl_socket;
-	this->pfd.events = POLLIN;
-	this->pfd.revents = 0;
+	cont_pfd.fd = this->cl_socket;
+	cont_pfd.events = POLLIN;
+	cont_pfd.revents = 0;
+	this->pfd.pushback(cont_pfd);
 }
 
 size_t Cont_Server::send_pkt(Packet& pkt, int cl_idx) {
@@ -127,6 +136,17 @@ size_t Sw_Client::send_pkt(Packet& pkt) {
 	return bytes_wrtn;
 }
 
+void Sw_Client::poll_cont() {
+	struct pollfd * pfd_ptr = &(this->pfd[0]);
+	poll(pfd_ptr, 1, 0);
+}
+
+bool Sw_Client::is_pkt_from_cont() {
+	if (this->pfd[0].revents & POLLIN) { 
+		this->pfd[0].revents = 0;	
+		return true;
+	} else { return false; }
+}
 }
 /**
 int CS_Socket::send_pkt(int dest_sock, std::string& pkt, int pkt_len){

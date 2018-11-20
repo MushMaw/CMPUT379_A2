@@ -29,15 +29,15 @@ class Rule {
 		IP_Range src_ip, dest_ip;
 		int pri, pkt_count;
 		ActType act_type;
-		SwPort forward_port;
+		SwPort act_val;
 
 		Rule(std::string serial_rule);
-		Rule(IP_Range src_IP, IP_Range dest_IP, int pri, int pktCount, int actionType) 
+		Rule(IP_Range src_IP, IP_Range dest_IP, int pri, int act_type, int act_val) 
 			: src_IP(src_IP),
 			  dest_IP(dest_IP),
 			  pri(pri),
-			  pktCount(pktCount),
-			  actionType(actionType) {}
+			  act_type(act_type),
+			  act_val(act_val) {}
 
 		void serialize(std::string& ser_rule);
 		bool is_match(Header& header);

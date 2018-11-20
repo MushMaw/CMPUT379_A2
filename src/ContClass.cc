@@ -73,7 +73,45 @@ void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
 }
 
 void Controller::handle_query(Packet &que_pkt, int sw_idx) {
-	// TODO: Handle query
+	Header header();
+	int dest_sw = -1, dest_sw_idx = -1, act_val;
+
+	Switch * sw;
+	Packet add_pkt();
+	Rule * rule;
+	std::string ser_rule("");
+	ActType act_type;
+	IP_Range src_ip(), dest_ip();
+
+	header = Header(que_pkt.msg);
+	for (int i = 0; i < nswitch; i++) {
+		if (i == sw_idx) { continue; }
+		sw = this->running_sw[i];
+		if (sw->ip_range.is_in_range(header.dest_ip)) {
+			dest_sw = sw->id;
+			dest_sw_idx = i;
+			break;
+		}
+	}
+
+	if (dest_sw < 0) { 
+		act_type = AT_DROP;
+		act_val = 0;
+       	}
+	else {
+		act_type = AT_FORWARD;
+		if (dest_sw > sw_id) { act_val = SWK_PORT; }
+		else { act_val = SWJ_PORT; }
+	}
+
+	src_ip = IP_Range(0, MAX_IP);
+	dest_ip = IP_Range(sw->ip_range.low, sw->ip_range.high);
+
+	rule = new Rule(src_ip, dest_ip, MIN_PRI, act_type, act_val);
+	rule->serialize(ser_rule);
+	add_pkt.ptype = PT_ADD;
+	add_pkt.msg = ser_rule;
+	this->send_pkt(add_pkt, sw_idx);
 }	
 
 void Controller::handle_user_cmd() {
@@ -85,7 +123,7 @@ void Controller::handle_user_cmd() {
 	} else if (user_input == CONT_USER_EXIT_CMD) {
 		this->keep_running = false;
 	} else {
-		std::cout << user_input << ERR_INVALID_USER_CMD;
+		std::cout << user_input << ERR_INVALID_CONT_USER_CMD;
 	}
 }
 

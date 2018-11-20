@@ -34,7 +34,7 @@ class Cont_Server {
 class Sw_Client {
 	private:
 		int cl_socket, port_num;
-		struct pollfd pfd;
+		std::vector<struct pollfd> pfd;
 	public
 		Sw_Client(std::string& address, int port_num);
 }
