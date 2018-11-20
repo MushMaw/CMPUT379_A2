@@ -56,6 +56,7 @@ Switch::Switch(int argc, char *argv[]){
 
 	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT);}
 	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND);}
+	this->tfile = std::open(argv[2]);
 
 	tfile_name = argv[2];
 	id_str = argv[1]; swj_id_str = argv[3]; swk_id_str = argv[4];
@@ -78,6 +79,8 @@ Switch::Switch(int argc, char *argv[]){
 		}
 
 		this->client = new Sw_Client(address_str, portnum);
+		this->timer = new Timer();
+		this->stats = new PktStats();
 
 	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what()); }
 	catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
@@ -162,6 +165,58 @@ void Switch::start() {
 	}
 }
 
+void Switch::read_next_traffic_line() {
+	std::string line("");
+	char c;
+
+	// If next line is empty or is a comment (starts with '#'), do nothing.
+	c = this->tfile.peak();
+	std::getline(line, this->tfile);
+        if (c == '#' || c == '\n') { return; }	
+
+	header = Header(line);
+	if (header.swi == this->id) {
+		if (header.delay > 0) {
+			//TODO: Delay for some time
+			this->start_traffic_delay(header.delay);
+		} else {
+			this->handle_header(header);
+		}
+	}
+}
+
+void Switch::handle_header(Header &header) {
+	int ft_len = this->flow_table.size();
+	int match_idx = -1;
+
+	for (int i = 0; i < ft_len; i++) {
+		if (this->flow_table[i]->is_match(header)) {
+			match_idx = i;
+			break;
+		}
+	}
+
+	if (match_idx < 0) { match_idx = this->query_cont(header); }
+	this->execute_rule(header, match_idx);
+}
+
+void Switch::query_cont(Header& header) {
+
+}
+
+void Switch::execute_rule(Header& header, int rule_idx) {
+
+}
+
+void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, int aval, int pri) {
+	Rule * new_rule = new Rule(src_IP, dest_IP, atype, aval, pri);
+	this->flow_table.pushback(new_rule);
+}
+
+void Switch::start_traffic_delay(int delay) {
+	this->timer->start(delay);
+}
+
 void Switch::run() {
 	Packet pkt;
 	struct pollfd stdin_pfd[1];
@@ -176,7 +231,10 @@ void Switch::run() {
 
 	while (1) {
 		// Handle next line (if any) from traffic file
-		this->get_next_traffic_pkt();
+		// Check if switch is currently delayed before reading
+		if (this->timer->at_target_duration() == true) {
+			this->read_next_traffic_line(pkt);
+		}
 
 		// Poll stdin for user command
 		poll(stdin_pfd, 1, 0);

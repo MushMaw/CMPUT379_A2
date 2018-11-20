@@ -32,7 +32,6 @@
 #define ERR_PKT_WRITE "Error during write to file descriptor\n"
 
 enum PktType {PT_UNINIT, PT_OPEN, PT_ACK, PT_QUERY, PT_ADD, PT_RELAY, PT_ADMIT};
-enum ActType {FORWARD, DROP};
 enum PktLogMode {PKT_LOG_RCV_MODE, PKT_LOG_SEND_MODE};
 
 class Pkt_Exception: public std::runtime_error {

@@ -12,6 +12,8 @@
 #define RULE_DELIM std::string (" ")
 #define HEADER_DELIM std::string(" ")
 
+enum ActType {AT_FORWARD, AT_DROP};
+
 class Rule_Exception : public std::runtime_error {
 	public:
 		Rule_Exception(const char* message) : std::runtime_error(message){}
@@ -24,8 +26,9 @@ class Header_Exception : public std::runtime_error {
 
 class Rule {
 	public:
-		IP_Range src_IP, dest_IP;
-		int pri, pktCount, actionType;
+		IP_Range src_ip, dest_ip;
+		int pri, pkt_count;
+		ActType act_type;
 		SwPort forward_port;
 
 		Rule(std::string serial_rule);
@@ -35,19 +38,11 @@ class Rule {
 			  pri(pri),
 			  pktCount(pktCount),
 			  actionType(actionType) {}
+
 		void serialize(std::string& ser_rule);
-};
-
-class Header {
-	public:
-		int swi, src_IP, dest_IP;
-
-		Header(int swi, int src_IP, int dest_IP)
-			: swi(swi),
-			  src_IP(src_IP),
-			  dest_IP(dest_IP) {}
-		Header(std::string& ser_header);
-		void serialize(std::string& ser_header);
+		bool is_match(Header& header);
+		void print();
+		void add_pkt();
 };
 
 #endif

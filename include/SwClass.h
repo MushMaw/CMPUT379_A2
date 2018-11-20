@@ -17,8 +17,12 @@
 
 #include "parselib.h"
 #include "constants.h"
+
 #include "RuleClass.h"
 #include "PktClass.h"
+#include "CS_SocketClass.h"
+#include "PktStatsClass.h"
+#include "TimerClass.h"
 
 #define ACT_FORWARD 1
 #define ACT_DROP 2
@@ -42,11 +46,13 @@ class Sw_Exception : public std::runtime_error {
 class Switch {
 	private:
 		std::string tfile_name;
-		std::vector<Rule> flow_table;
+		std::vector<Rule *> flow_table;
 		std::vector<struct pollfd> port_pfds;
+		ifstream tfile;
 
 		Sw_Client * client;
 		PktStats * stats;
+		Timer * timer;
 
 	public:
 		int id, swj_id, swk_id;
