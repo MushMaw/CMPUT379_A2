@@ -35,9 +35,9 @@ Switch::Switch(int argc, char *argv[]){
 	std::string address_str, portnum_str;
 	int portnum;
 
-	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT);}
-	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND);}
-	this->tfile = std::open(argv[2]);
+	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT, ERR_SW_CONSTR_FUNC);}
+	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND, ERR_SW_CONSTR_FUNC);}
+	this->tfile.open(argv[2]);
 
 	// Convert char arguments to string objects
 	tfile_name = argv[2];
@@ -58,14 +58,14 @@ Switch::Switch(int argc, char *argv[]){
 		ip_range = IP_Range(ip_range_str);
 		
 		this->keep_running = true;
-		portnum = str_to_int(port_num_str);
+		portnum = str_to_int(portnum_str);
 		this->client = new Sw_Client(address_str, portnum);
 		this->timer = new Timer();
-		this->stats = new PktStats();
+		this->stats = new SwStats();
 
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what()); }
-	  catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
-	  catch (IP_Range_Exception& e) { throw Sw_Exception(e.what()); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback()); }
+	  catch (Parse_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback()); }
+	  catch (IP_Range_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback()); }
 }
 
 /**
@@ -84,6 +84,7 @@ void Switch::deserialize(std::string& ser_sw) {
 	int tok_count;
 
 	tok_count = tok_split(ser_sw, SW_DELIM, toks);
+	if (tok_count != 4) { throw Sw_Exception(ERR_SW_SER_FORMAT, ERR_SW_DESERIALIZE_FUNC); }
 
 	try {
 		this->id = str_to_int(toks.at(0));
@@ -94,7 +95,7 @@ void Switch::deserialize(std::string& ser_sw) {
 		else { this->swk_id = str_to_int(toks.at(2)); }
 
 		this->ip_range = IP_Range(toks.at(3));
-	} catch (ParseException& e) { throw Sw_Exception(e.what()); }
+	} catch (Parse_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_DESERIALIZE_FUNC, e.get_traceback()); }
 }
 
 /**
@@ -123,7 +124,7 @@ void Switch::serialize(std::string& ser_sw) {
 	else { ser_sw += std::to_string(this->swk_id); }
 	ser_sw += SW_DELIM;
 
-	serialize_ip_range(ser_ip_range, this->ip_range);
+	this->ip_range.serialize(ser_ip_range);
 	ser_sw += ser_ip_range;
 }
 
@@ -138,10 +139,10 @@ void Switch::serialize(std::string& ser_sw) {
  */
 void Switch::poll_ports() {
 	struct pollfd * port_pfds_ptr = &(this->port_pfds[0]);
-	if (poll(port_pfds_ptr, SWPORT_COUNT, 0) < 0) { throw Sw_Exception(ERR_SW_POLL_FAIL); }
+	if (poll(port_pfds_ptr, this->port_pfds.size(), 0) < 0) { throw Sw_Exception(ERR_SW_POLL_FAIL, ERR_SW_POLL_PORTS_FUNC); }
 	try {
 		this->client->poll_server();
-	} catch (CS_SktException& e) { throw Sw_Exception(ERR_SW_POLL_FAIL); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(ERR_SW_POLL_FAIL, ERR_SW_POLL_PORTS_FUNC); }
 }
 
 /**
@@ -156,7 +157,7 @@ void Switch::poll_ports() {
 void Switch::print() {
 	std::string ip_range_str;
 	this->ip_range.serialize(ip_range_str);
-	fprintf(stdout, SW_PRINT_MSG, this->id, this->swj, this->swk, ip_range_str.c_str());
+	fprintf(stdout, SW_PRINT_MSG, this->id, this->swj_id, this->swk_id, ip_range_str.c_str());
 }
 
 /**
@@ -180,23 +181,24 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 				this->client->send_pkt(pkt);
 				break;
 			case SWJ_PORT:
-				pkt.send_to_fd(this->port_pfds[SWJ_PORT - 1]);
+				pkt.write_to_fd(this->port_pfds[SWJ_PORT - 1].fd);
 				break;
 			case SWK_PORT:
-				pkt.send_to_fd(this->port_pfds[SWK_PORT - 1]);
+				pkt.write_to_fd(this->port_pfds[SWK_PORT - 1].fd);
 				break;
 			default:
 				return;
-	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
-	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+		}
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_SEND_PKT_FUNC, e.get_traceback()); }
+	catch (Pkt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_SEND_PKT_FUNC, e.get_traceback()); }
 
 	// Print log of sent packet and record sent packet type in stats
-	this->stats->log_send(pkt);
-	this->print_log(pkt, port, PKT_LOG_RCV_MODE);
+	this->stats->log_send(pkt.ptype);
+	this->print_log(pkt, static_cast<int>(port), LOG_RCV_MODE);
 }
 
 /**
- * Function: 
+ * Function: rcv_pkt
  * -----------------------
  * Receieves Packet "pkt" from specified port.
  * This method assumes there is data to be receieved, so the "poll_ports"
@@ -209,7 +211,7 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
  * Throws: None
  */
 void Switch::rcv_pkt(Packet &pkt, SwPort port) {
-	Header header;
+	Header header();
 
 	try {
 		switch(port) {
@@ -217,19 +219,38 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 				this->client->rcv_pkt(pkt);
 				break;
 			case SWJ_PORT:
-				pkt.read_from_fd(this->port_pfds[SWJ_PORT]);
+				pkt.read_from_fd(this->port_pfds[SWJ_PORT].fd);
 				break;
 			case SWK_PORT:
-				pkt.read_from_fd(this->port_pfds[SWK_PORT]);
+				pkt.read_from_fd(this->port_pfds[SWK_PORT].fd);
 				break;
 			default:
 				return;
-	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
-	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
+		}
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RCV_PKT_FUNC, e.get_traceback()); }
+	catch (Pkt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RCV_PKT_FUNC, e.get_traceback()); }
 
 	// Print log of received packet and record newly-received packet type in stats
-	this->stats->log_rcv(pkt);
-	this->print_log(pkt, port, PKT_LOG_SEND_MODE);
+	this->stats->log_rcv(pkt.ptype);
+	this->print_log(pkt, static_cast<int>(port), LOG_SEND_MODE);
+}
+
+/**
+ * Function: print_log
+ * -----------------------
+ * Prints information about Packet including whether it was received or sent, its source
+ * and destination, and the contents of its message.
+ *
+ * Parameters: 
+ *	- pkt: Packet to be printed as log
+ *	- sd: Either source or destination of Packet. Its identity is based on the "mode",
+ *	      where "send" mode means "sd" = destination.
+ *	- mode: Either "receive" or "send" mode
+ * Return Value: None
+ * Throws: None
+ */
+void Switch::print_log(Packet &pkt, int sd, LogMode mode) {
+	return;
 }
 
 /**
@@ -254,14 +275,14 @@ void Switch::start() {
 	try {
 		this->send_pkt(open_pkt, CONT_PORT);
 		while (1) {
-			this->poll_ports;
-			if (this->port_pfds[CONT_PORT].revents & POLLIN) {
-				this->client->rcv_pkt(ack_pkt)
+			this->poll_ports();
+			if (this->client->is_pkt_from_server()) {
+				this->client->rcv_pkt(ack_pkt);
 				if (ack_pkt.ptype == PT_ACK) { break; }
 			}	
 		}
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what()); }
-	  catch (Sw_Exception& e) { throw; }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback()); }
+	  catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback()); }
 }
 
 /**
@@ -304,22 +325,24 @@ void Switch::list() {
  * Throws: None
  */
 void Switch::read_next_traffic_line() {
+	Header header;
 	std::string line("");
-	char c;
+	char c, line_c_str[MAX_LINE_READ];
 
 	// Check if end of traffic file has been reached.
-	if (this->tflie.eof()) { return; }
+	if (this->tfile.eof()) { return; }
 
 	// If next line is empty or is a comment (starts with '#'), do nothing.
-	c = this->tfile.peak();
-	std::getline(line, this->tfile);
+	c = this->tfile.peek();
+	this->tfile.getline(line_c_str, MAX_LINE_READ);
+	line = line_c_str;
         if (c == '#' || c == '\n') { return; }	
 
-	header = Header(line);
+	header.deserialize(line);
 	if (header.swi == this->id) {
-		if (header.delay > 0) {
+		if (header.timeout > 0) {
 			//TODO: Delay for some time
-			this->start_traffic_delay(header.delay);
+			this->start_traffic_delay(header.timeout);
 		} else {
 			this->handle_header(header);
 		}
@@ -364,24 +387,26 @@ void Switch::handle_header(Header &header) {
  * Return Value: None
  * Throws: None
  */
-void Switch::query_cont(Header& header) {
-	Packet que_pkt(), add_pkt();
-	Rule * new_rule();
+int Switch::query_cont(Header& header) {
+	Packet que_pkt, add_pkt;
+	Rule * new_rule = NULL;
 	std::string que_msg;
 
 	que_pkt.ptype = PT_QUERY;
 	header.serialize(que_msg);
 	que_pkt.msg = que_msg;
 
-	this->send_pkt(que_pkt, CONT_PORT);
-	while (1) {
-		if (this->is_pkt_from_cont()) {
-			this->client->rcv_pkt(add_pkt);
-			new_rule = new Rule(add_pkt.msg);
-			this->flow_table.pushback(new_rule)
-			return this->flow_table.size();
+	try {
+		this->send_pkt(que_pkt, CONT_PORT);
+		while (1) {
+			if (this->client->is_pkt_from_server()) {
+				this->client->rcv_pkt(add_pkt);
+				new_rule = new Rule(add_pkt.msg);
+				this->flow_table.push_back(new_rule);
+				return this->flow_table.size();
+			}
 		}
-	}
+	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_QUERY_CONT_FUNC, e.get_traceback()); }
 }
 
 /**
@@ -396,20 +421,22 @@ void Switch::query_cont(Header& header) {
  */
 void Switch::execute_rule(Header& header, int rule_idx) {
 	Rule * rule;
-	Packet relay_pkt();
+	Packet relay_pkt;
 	std::string ser_header;
 
-	// If action type is FORWARD, send header to specified port
-	rule = this->flow_table[rule_idx];
-	if (rule->atype == AT_FORWARD) {
-		relay_pkt.ptype = PT_RELAY;
-		header.serialize(ser_header);
-		relay_pkt.msg = ser_header;
-		this->send_pkt(relay_pkt, rule->forward_port);
-	}
-	
-	// Increment packet count of rule
-	this->flow_table[rule_idx]->pkt_count++;
+	try {
+		// If action type is FORWARD, send header to specified port
+		rule = this->flow_table[rule_idx];
+		if (rule->act_type == AT_FORWARD) {
+			relay_pkt.ptype = PT_RELAY;
+			header.serialize(ser_header);
+			relay_pkt.msg = ser_header;
+			this->send_pkt(relay_pkt, rule->act_val);
+		}
+		
+		// Increment packet count of rule
+		this->flow_table[rule_idx]->pkt_count++;
+	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_EXECUTE_RULE_FUNC, e.get_traceback()); }
 }
 
 /**
@@ -422,9 +449,9 @@ void Switch::execute_rule(Header& header, int rule_idx) {
  * Return Value: None
  * Throws: None
  */
-void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, int aval, int pri) {
+void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, SwPort aval, int pri) {
 	Rule * new_rule = new Rule(src_IP, dest_IP, atype, aval, pri);
-	this->flow_table.pushback(new_rule);
+	this->flow_table.push_back(new_rule);
 }
 
 /**
@@ -460,7 +487,7 @@ void Switch::handle_user_cmd() {
 	} else if (user_cmd == SW_USER_EXIT_CMD) {
 		this->keep_running = false;
 	} else {
-		std::cout << user_cmd << ERR_INVALID_SW_USER_CMD;
+		std::cout << user_cmd << ERR_SW_INVALID_USER_CMD;
 	}
 }
 
@@ -490,7 +517,7 @@ void Switch::run() {
 		// Handle next line (if any) from traffic file
 		// Check if switch is currently delayed before reading
 		if (this->timer->at_target_duration() == true) {
-			this->read_next_traffic_line(pkt);
+			this->read_next_traffic_line();
 		}
 
 		// Poll stdin for user command

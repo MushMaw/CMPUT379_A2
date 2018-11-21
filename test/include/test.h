@@ -7,5 +7,6 @@
 #include "parselib.h"
 #include "TimerClass.h"
 #include "HeaderClass.h"
+#include "PktStatsClass.h"
 
 #endif

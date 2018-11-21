@@ -7,6 +7,9 @@
 #define _A2_CONSTANTS_H 1
 
 #define MAX_NSWITCH 7
+#define MAX_LINE_READ 100
+#define MAX_IP 1000
+#define MIN_PRI 4
 
 #define SW_MODE std::string ("sw")
 #define CONT_MODE std::string ("cont")
@@ -15,7 +18,8 @@
 #define TB_EXC_PRINT_START "Exception Occurred:\n"
 #define TB_EXC_TRACEBACK "	Traceback: "
 #define TB_EXC_ERROR_MSG "	Error: "
-#define TB_EXC_TRACEBACK_DELIM ": "
+#define TB_EXC_TRACEBACK_DELIM std::string(": ")
+
 #define EMPTY_STR std::string("")
 
 #define ERR_CONT_CL_FORMAT "format: ./a2sdn cont nSwitch\n"

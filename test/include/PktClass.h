@@ -12,21 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "HeaderClass.h"
-#include "RuleClass.h"
-#include "SwClass.h"
 #include "parselib.h"
 
 #define PKT_LEN 127
 #define PKT_DELIM std::string (" ")
 #define PKT_EMPTY_MSG std::string("")
-
-#define PKT_LOG_RCV_STR "Received: "
-#define PKT_LOG_SEND_STR "Transmitted: "
-#define PKT_LOG_SRC_DEST_STR "(src= %s, dest= %s) "
-#define PKT_LOG_CONT_STR std::string("cont")
-
-#define PKT_LOG_CONT std::string("cont")
 
 #define PTYPE_STR_OPEN "[OPEN]"
 #define PTYPE_STR_ACK "[ACK]"
@@ -37,12 +27,14 @@
 #define ERR_PKT_READ_FD_FUNC std::string("Packet::read_from_fd()")
 #define ERR_PKT_WRITE_FD_FUNC std::string("Packet::write_to_fd()")
 #define ERR_PKT_PRINT_LOG_FUNC std::string("Packet::print_log()")
+#define ERR_PKT_DESERIALIZE_FUNC std::string("Packet::print_log()")
 
 #define ERR_PKT_READ "Error during read from file descriptor\n"
 #define ERR_PKT_WRITE "Error during write to file descriptor\n"
+#define ERR_PKT_SER_FORMAT "Invalid format given in serialized Packet"
 
-enum PktType {PT_UNINIT, PT_OPEN, PT_ACK, PT_QUERY, PT_ADD, PT_RELAY, PT_ADMIT};
-enum PktLogMode {PKT_LOG_RCV_MODE, PKT_LOG_SEND_MODE};
+typedef enum {PT_UNINIT, PT_OPEN, PT_ACK, PT_QUERY, PT_ADD, PT_RELAY, PT_ADMIT} PktType;
+
 
 class Pkt_Exception : public Traceback_Exception {
 	public:
@@ -58,6 +50,7 @@ class Packet {
 		std::string msg;
 	
 		Packet();
+		Packet(PktType ptype);
 		Packet(PktType ptype, std::string& msg);
 		Packet(std::string& pkt);
 

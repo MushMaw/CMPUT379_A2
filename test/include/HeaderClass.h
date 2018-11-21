@@ -31,6 +31,7 @@ class Header {
 	public:
 		int swi, src_ip, dest_ip, timeout;
 
+		Header();
 		Header(int swi, int src_ip, int dest_ip)
 			: swi(swi),
 			  src_ip(src_ip),

@@ -10,6 +10,14 @@
 /**
  * Header Constructors
  */
+
+Header::Header() {
+	this->swi = -1;
+	this->src_ip = -1;
+	this->dest_ip = -1;
+	this->timeout = -1;
+}
+
 Header::Header(std::string& ser_header) {
 	this->deserialize(ser_header);
 }

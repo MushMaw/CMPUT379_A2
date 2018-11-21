@@ -40,7 +40,7 @@ class Rule {
 		SwPort act_val;
 
 		Rule(std::string& serial_rule);
-		Rule(IP_Range src_ip, IP_Range dest_ip, int pri, ActType act_type, SwPort act_val) 
+		Rule(IP_Range src_ip, IP_Range dest_ip, ActType act_type, SwPort act_val, int pri) 
 			: src_ip(src_ip),
 			  dest_ip(dest_ip),
 			  pri(pri),
