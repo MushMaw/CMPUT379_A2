@@ -1,12 +1,39 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: PktClass.cc
+ * Student Name: Jacob Bakker
+ *
+ */
+
 #include "PktClass.h"
 
 Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 Packet::Packet() : ptype(PT_UNINIT), msg("") {};
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Packet::set_msg(std::string& new_msg) {
 	this->msg.assign(new_msg);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Packet::deserialize(std::string& ser_pkt) {
 	std::string pkt_type_str (""), pkt_msg_str ("");
 	int type_end_idx, pkt_type;
@@ -24,6 +51,16 @@ void Packet::deserialize(std::string& ser_pkt) {
 	this->msg = pkt_msg_str;
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Packet::serialize(std::string& ser_pkt) {
 	int ser_pkt_len, pkt_type_int = static_cast<int>(this->ptype);
 	std::string pkt_type_str = std::to_string(pkt_type_int);
@@ -35,38 +72,15 @@ void Packet::serialize(std::string& ser_pkt) {
 }
 
 /**
-size_t Packet::read_from_fifo(int fifo) {
-	std::string ser_pkt ("");
-	char * msg_buffer = new char [PKT_LEN];
-	size_t total_read = 0, num_read = 0;
-
-	while (total_read < PKT_LEN + 1) {
-		num_read = read(fifo, msg_buffer, PKT_LEN + 1);
-		total_read += num_read;
-		std::cout << "read " << total_read << "\n";
-	}	
-
-	ser_pkt.assign(msg_buffer);
-	delete[] msg_buffer;
-	this->deserialize(ser_pkt);
-	return total_read;
-}
-
-void Packet::write_to_fifo(int fifo) {
-	std::string ser_pkt ("");
-	size_t total_wrtn = 0, num_wrtn = 0;
-
-	this->serialize(ser_pkt);
-	std::cout << "len of ser pkt:" << ser_pkt.length();
-	while (total_wrtn < PKT_LEN + 1) {
-		std::cout << "Amount to write: " << (ser_pkt.length() + 1 - total_wrtn) << "\n";
-		num_wrtn = write(fifo, ser_pkt.c_str(), (ser_pkt.length() + 1 - total_wrtn));
-		total_wrtn += num_wrtn;
-		std::cout << "wrote " << num_wrtn << "\n";
-	}
-}
-*/
-
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 size_t Packet::read_from_fd(int fd) {
 	std::string ser_pkt(""), buffer_op("");
 	char buffer[PKT_LEN + 1];
@@ -90,6 +104,16 @@ size_t Packet::read_from_fd(int fd) {
 	return total_read;
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 size_t Packet::write_to_fd(int fd) {
 	std::string ser_pkt("");
 	size_t total_wrtn = 0, bytes_wrtn = 0;
@@ -106,6 +130,16 @@ size_t Packet::write_to_fd(int fd) {
 	return total_wrtn;
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Packet::print_log(int src, int dest, PktLogMode mode) {
 	std::string src_str(""), dest_str("");
 	Header header;
@@ -113,9 +147,9 @@ void Packet::print_log(int src, int dest, PktLogMode mode) {
 	Rule rule;
 
 	if (mode == PKT_LOG_RCV_MODE) {
-		std::cout << PKT_LOG_RCV_TEXT;
+		std::cout << PKT_LOG_RCV_STR;
 	} else {
-		std::cout << PKT_LOG_SEND_TEXT;
+		std::cout << PKT_LOG_SEND_STR;
 	}
 
 	get_src_dest_str(src, src_str);
@@ -149,4 +183,22 @@ void Packet::print_log(int src, int dest, PktLogMode mode) {
 	}
 }
 
-void Packet::get_src_dest_str(
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
+void Packet::get_src_dest_str(int src, std::string& src_str) {
+	std::string sw_str("");
+	if (src == 0) {
+		src_str.assign(PKT_LOG_CONT_STR);
+	} else {
+		get_sw_str(src, sw_str);
+		src_str.assign(sw_str);
+	}
+}

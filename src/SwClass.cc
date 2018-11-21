@@ -1,54 +1,32 @@
 /**
- * CMPUT 379 - Assignment 2
+ * CMPUT 379 - Assignment 3
+ * File Name: SwClass.cc
  * Student Name: Jacob Bakker
+ *
+ * Desc
  */
 
-// TODO: Print messages as they are received from ports.
-
 #include "SwClass.h"
+
 
 Switch::Switch(int id, int swj_id, int swk_id, IP_Range ip_range) : id(id),
 								    swj_id(swj_id),
 								    swk_id(swk_id),
 								    ip_range(ip_range) {}
-
 Switch::Switch(std::string& ser_sw) {
-	std::vector<std::string> toks;
-	int tok_count;
-
-	tok_count = tok_split(ser_sw, SW_DELIM, toks);
-
-	try {
-		this->id = str_to_pos_int(toks.at(0));
-
-		std::cout << "0:"<<toks.at(0) << "|1:"<<toks.at(1)<<"|2:" << toks.at(2)<<"|3:" << toks.at(3) << "\n";
-		if (toks.at(1) == NULL_PORT) { this->swj_id = 0; }
-		else { this->swj_id = str_to_pos_int(toks.at(1)); }
-		if (toks.at(2) == NULL_PORT) { this->swk_id = 0; }
-		else { this->swk_id = str_to_pos_int(toks.at(2)); }
-
-		this->ip_range = get_ip_range(toks.at(3));
-	} catch (ParseException& e) { throw Sw_Exception(e.what()); }
+	this->deserialize(ser_sw);
 }
 
-void Switch::serialize(std::string& ser_sw) {
-	std::string ser_ip_range;
-
-	ser_sw += std::to_string(this->id);
-	ser_sw += SW_DELIM;
-
-	if (this->swj_id == 0) { ser_sw += NULL_PORT; }
-	else { ser_sw += std::to_string(this->swj_id); }
-	ser_sw += SW_DELIM;
-
-	if (this->swk_id == 0) { ser_sw += NULL_PORT; }
-	else { ser_sw += std::to_string(this->swk_id); }
-	ser_sw += SW_DELIM;
-
-	serialize_ip_range(ser_ip_range, this->ip_range);
-	ser_sw += ser_ip_range;
-}
-
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 Switch::Switch(int argc, char *argv[]){
 	struct stat buffer;
 	std::string id_str, swj_id_str, swk_id_str, ip_range_str;
@@ -87,6 +65,73 @@ Switch::Switch(int argc, char *argv[]){
 	catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
+void Switch::deserialize(std::string& ser_sw) {
+	std::vector<std::string> toks;
+	int tok_count;
+
+	tok_count = tok_split(ser_sw, SW_DELIM, toks);
+
+	try {
+		this->id = str_to_pos_int(toks.at(0));
+
+		std::cout << "0:"<<toks.at(0) << "|1:"<<toks.at(1)<<"|2:" << toks.at(2)<<"|3:" << toks.at(3) << "\n";
+		if (toks.at(1) == NULL_PORT) { this->swj_id = 0; }
+		else { this->swj_id = str_to_pos_int(toks.at(1)); }
+		if (toks.at(2) == NULL_PORT) { this->swk_id = 0; }
+		else { this->swk_id = str_to_pos_int(toks.at(2)); }
+
+		this->ip_range = get_ip_range(toks.at(3));
+	} catch (ParseException& e) { throw Sw_Exception(e.what()); }
+}
+
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
+void Switch::serialize(std::string& ser_sw) {
+	std::string ser_ip_range;
+
+	ser_sw += std::to_string(this->id);
+	ser_sw += SW_DELIM;
+
+	if (this->swj_id == 0) { ser_sw += NULL_PORT; }
+	else { ser_sw += std::to_string(this->swj_id); }
+	ser_sw += SW_DELIM;
+
+	if (this->swk_id == 0) { ser_sw += NULL_PORT; }
+	else { ser_sw += std::to_string(this->swk_id); }
+	ser_sw += SW_DELIM;
+
+	serialize_ip_range(ser_ip_range, this->ip_range);
+	ser_sw += ser_ip_range;
+}
+
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::print() {
 	std::string ser_IP;
 
@@ -94,17 +139,47 @@ void Switch::print() {
 	fprintf(stdout, SW_PRINT_INFO, this->swi, this->swj, this->swk, ser_IP);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::poll_ports() {
 	struct pollfd * port_pfds_ptr = &(this->port_pfds[0]);
 	poll(port_pfds_ptr, SWPORT_COUNT, 0);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::print() {
 	std::string ip_range_str;
 	serialize_ip_range(ip_range_str, this->ip_range)
 	fprintf(stdout, SW_PRINT_MSG, this->id, this->swj, this->swk, ip_range_str.c_str());
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::send_pkt(Packet &pkt, SwPort port) {
 	try {
 		switch(port) {
@@ -126,6 +201,16 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 	this->print_log(pkt, port, PKT_LOG_RCV_MODE);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 	Header header;
 
@@ -150,6 +235,16 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 	this->print_log(pkt, port, PKT_LOG_SEND_MODE);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::start() {
 	Packet open_pkt, ack_pkt;
 	std::string ser_sw("");
@@ -168,6 +263,16 @@ void Switch::start() {
 	}
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::list() {
 	int ft_len = this->flow_table.size();
 
@@ -182,6 +287,16 @@ void Switch::list() {
 	this->stats->print();
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::read_next_traffic_line() {
 	std::string line("");
 	char c;
@@ -204,6 +319,16 @@ void Switch::read_next_traffic_line() {
 	}
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::handle_header(Header &header) {
 	int ft_len = this->flow_table.size();
 	int match_idx = -1;
@@ -219,6 +344,16 @@ void Switch::handle_header(Header &header) {
 	this->execute_rule(header, match_idx);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::query_cont(Header& header) {
 	Packet que_pkt(), add_pkt();
 	Rule * new_rule();
@@ -239,6 +374,16 @@ void Switch::query_cont(Header& header) {
 	}
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::execute_rule(Header& header, int rule_idx) {
 	Rule * rule;
 	Packet relay_pkt();
@@ -257,15 +402,45 @@ void Switch::execute_rule(Header& header, int rule_idx) {
 	this->flow_table[rule_idx]->pkt_count++;
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, int aval, int pri) {
 	Rule * new_rule = new Rule(src_IP, dest_IP, atype, aval, pri);
 	this->flow_table.pushback(new_rule);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::start_traffic_delay(int delay) {
 	this->timer->start(delay);
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::handle_user_cmd() {
 	std::string user_cmd("");
 
@@ -279,6 +454,16 @@ void Switch::handle_user_cmd() {
 	}
 }
 
+/**
+ * Function: 
+ * -----------------------
+ * Ser
+ *
+ * Parameters:
+ * 	- ser
+ * Return Value: None
+ * Throws: None
+ */
 void Switch::run() {
 	Packet pkt;
 	struct pollfd stdin_pfd[1];

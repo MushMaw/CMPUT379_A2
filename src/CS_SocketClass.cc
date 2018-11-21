@@ -1,3 +1,13 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: CS_SktClass.cc
+ * Student Name: Jacob Bakker
+ *
+ * Implements TCP server and client classes to be used by Controllers and Switches respectively.
+ *
+ * Includes functions for polling the server or clients and sending/receiving Packet objects
+ */
+
 #include "CS_SocketClass.h"
 
 /**
@@ -299,37 +309,3 @@ bool Sw_Client::is_pkt_from_server() {
 		return true;
 	} else { return false; }
 }
-}
-/**
-int CS_Socket::send_pkt(int dest_sock, std::string& pkt, int pkt_len){
-	int total_sent = 0, bytes_sent = 0;
-
-	while (total_rcv < pkt_len) {
-		bytes_sent = write(dest_sock, &pkt.c_str()[total_sent], pkt_len);
-		if (bytes_sent < 0) {
-			return -1;
-		total_sent += bytes_sent;
-	}
-	return total_sent;
-}
-
-int CS_Socket::rcv_pkt(int send_sock, std::string& pkt, int pkt_len) {
-	int total_rcv = 0, bytes_rcv = 0;
-	char buffer[pkt_len + 1];
-	std::string buffer_op;
-
-	while (total_rcv < pkt_len) {
-		bytes_rcv = read(send_sock, buffer, pkt_len);
-		if (bytes_rcv < 0) {
-			return -1;
-		} else if (bytes_rcv == 0) {
-			break;
-		}
-		buffer_op = buffer;
-		pkt += buffer_op;
-		memset(buffer, 0, pkt_len + 1);
-	}
-	return total_rcv;
-}
-
-*/

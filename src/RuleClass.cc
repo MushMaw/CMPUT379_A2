@@ -1,3 +1,16 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: RuleClass.cc
+ * Student Name: Jacob Bakker
+ *
+ * Implements class for pattern-action Rules to be stored in a Switch's flow table.
+ *
+ * Rules can be created either by supplying all required attributes (e.g. source/destination
+ * IP ranges, action type) or with a serialized Rule string.
+ * Implements methods for matching Header objects to Rules, incrementing packet counts, and
+ * printing a formatted message containing the Rule's attributes.
+ */
+
 #include "RuleClass.h"
 
 /**
@@ -71,10 +84,10 @@ void Rule::serialize(std::string& ser_rule) {
  * Throws: None
  */
 bool Rule::is_match(Header& header) {
-	if (header.src_ip < this->src_ip.low || this->src_ip.high < header.src_ip) {
+	if (this->src_ip.is_match(header.src_ip) == false) {
 		return false;
 	}
-	if (header.dest_ip < this->dest_ip.low || this->dest_ip.high < header.dest_ip) {
+	if (this->dest_ip.is_match(header.dest_ip) == false) {
 		return false;
 	}
 	return true;

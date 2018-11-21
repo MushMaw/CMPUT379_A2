@@ -1,3 +1,10 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: HeaderClass.cc
+ * Student Name: Jacob Bakker
+ *
+ */
+
 #include "HeaderClass.h"
 
 /**

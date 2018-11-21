@@ -18,9 +18,10 @@
 #define PKT_DELIM std::string (" ")
 #define PKT_EMPTY_MSG std::string("")
 
-#define PKT_LOG_RCV_TEXT "Received: "
-#define PKT_LOG_SEND_TEXT "Transmitted: "
+#define PKT_LOG_RCV_STR "Received: "
+#define PKT_LOG_SEND_STR "Transmitted: "
 #define PKT_LOG_SRC_DEST_STR "(src= %s, dest= %s) "
+#define PKT_LOG_CONT_STR std::string("cont")
 
 #define PKT_LOG_CONT std::string("cont")
 

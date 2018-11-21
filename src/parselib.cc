@@ -1,6 +1,12 @@
 /**
- * CMPUT 379 - Assignment 2
+ * CMPUT 379 - Assignment 3
+ * File Name: parselib.cc
  * Student Name: Jacob Bakker
+ *
+ * Implements basic string parsing functions such as splitting a string into tokens and converting
+ * strings to integers.
+ * Additionally, contains functions getting names of Switches or FIFOs given Switch ID(s) as well as
+ * extracting Switch IDs from those names.
  */
 
 
@@ -25,12 +31,31 @@ int get_sw_val(std::string const& sw_str) {
 	try {
 		if (arg.substr(0,2) == sw_str) {
 			sw_num_substr = arg.substr(2, arg.length());
-			sw_num = str_to_pos_int(sw_num_substr);
+			sw_num = str_to_int(sw_num_substr);
 			return sw_num;
-	} catch (Parse_Exception& e) { throw; }
+	} catch (Parse_Exception& e) { throw Parse_Exception(e.what(), ERR_PARSELIB_GET_SW_VAL_FUNC, e.traceback); }
 
 	// If first two chars of "sw_str" are not "sw", throw exception
-	throw Parse_Exception(ERR_SW_NUM_FORMAT);
+	throw Parse_Exception(ERR_PARSELIB_SW_NUM_FORMAT, ERR_PARSELIB_GET_SW_VAL_FUNC, EMPTY_STR);
+}
+
+/**
+ * Function: get_sw_str
+ * -----------------------
+ * Sets "sw_str" to a string of the format "sw<sw_val>".
+ *
+ * Parameters:
+ * 	- sw_val: A positive Switch number.
+ *	- sw_str: Stores the Switch string with the above format.
+ * Return Value: None
+ * Throws:
+ *	- Parse_Exception
+ */
+void get_sw_str(int sw_val, std::string& sw_str) {
+	if (sw_val <= 0) { throw Parse_Exception(ERR_PARSELIB_NON_POS_SW_VAL, ERR_PARSELIB_GET_SW_STR_FUNC, EMPTY STR); }
+	sw_str.clear();
+	sw_str += SW_MODE;
+	sw_str += std::to_string(sw_val);
 }
 
 /**
@@ -51,7 +76,7 @@ int str_to_int(std::string const& str) {
 
 	output = strtol(str.c_str(), &c_ptr, 10);
 	// Throw exception if non-numeric character is found in "str"
-	if (!*c_ptr) { throw Parse_Exception(ERR_PARSELIB_NON_INT_CHAR); }
+	if (!*c_ptr) { throw Parse_Exception(ERR_PARSELIB_NON_INT_CHAR, ERR_PARSELIB_STR_TO_INT_FUNC, EMPTY_STR); }
 	
 	return output;
 }

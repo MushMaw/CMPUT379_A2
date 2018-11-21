@@ -1,20 +1,26 @@
 /**
- *  CMPUT 379 - Assignment 2
- *  Student Name: Jacob Bakker
+ * CMPUT 379 - Assignment 3
+ * File Name: a3sdn.cc
+ * Student Name: Jacob Bakker
+ *
  */
 
 #include "a3sdn.h"
 
 /**
- * Function:
+ * Function: main
  * -----------------------
- * Desc
+ * Creates and runs either a Controller or Switch using command-line arguments.
+ *
+ * If the Controller/Switch terminates due to an error, the error message and a
+ * traceback of function calls is displayed.
  *
  * Parameters:
- * 	- x
+ * 	- argc: Number of arguments.
+ *	- argv: Array of arguments.
  *
- * Return Value:
- * 	- y 
+ * Return Value: 0
+ * Throws: None
  */
 int main(int argc, char *argv[]) {
 	std::string mode_arg;

@@ -12,6 +12,9 @@
 #define CONT_MODE std::string ("cont")
 #define NULL_SW_STR std::string ("null")
 
+#define WHAT_FUNC_MSG_START "Traceback: "
+#define EMPTY_STR std::string("")
+
 #define ERR_CONT_CL_FORMAT "format: ./a2sdn cont nSwitch\n"
 #define ERR_SW_CL_FORMAT "format: ./a2sdn swi trafficFile [swj|null] [swk|null] ip_low-ip_high\n"
 

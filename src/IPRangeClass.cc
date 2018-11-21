@@ -1,3 +1,10 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: IPRangeClass.cc
+ * Student Name: Jacob Bakker
+ *
+ */
+
 #include "IPRangeClass.h"
 
 /**
