@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 #include <fcntl.h>
+#include <ios>
 
 #include "parselib.h"
 #include "constants.h"
@@ -41,6 +42,7 @@
 
 #define SW_DELAY_START_MSG "** Entering a delay period of %d msec\n"
 #define SW_DELAY_END_MSG "** Delay period ended\n"
+#define SW_EXIT_MSG "Shutting down Switch...\n"
 
 #define ERR_SW_CONSTR_FUNC std::string("Switch::Switch()")
 #define ERR_SW_DESERIALIZE_FUNC std::string("Switch::deserialize()")
@@ -74,7 +76,8 @@ class Switch {
 		std::string tfile_name;
 		std::vector<Rule *> flow_table;
 		std::vector<struct pollfd> port_pfds;
-		std::ifstream tfile;
+		int swj_wr_fifo, swk_wr_fifo;
+		FILE* tfile;
 		bool keep_running, is_delayed;
 
 		Sw_Client * client;
@@ -107,6 +110,7 @@ class Switch {
 		void start_traffic_delay(int delay);
 		void handle_user_cmd();
 		void print_log(Packet& pkt, int sd, LogMode mode);
+		void open_adj_sw_fifos();
 
 		void send_pkt(Packet &pkt, SwPort port);
 		void rcv_pkt(Packet &pkt, SwPort port);

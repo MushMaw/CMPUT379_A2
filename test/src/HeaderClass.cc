@@ -41,8 +41,9 @@ void Header::deserialize(std::string& ser_header) {
 	try {
 		this->swi = get_sw_val(toks.at(0));
 		// If Header specifies a delay
+		//std::cout << "first header tok: " << toks.at(1) << "\n";
 		if (toks.at(1) == HEADER_DELAY_TYPE) {
-			this->timeout = str_to_int(toks.at(1));
+			this->timeout = str_to_int(toks.at(2));
 			this->src_ip = -1;
 			this->dest_ip = -1;
 		// Else, Header specifies a source and destination IP

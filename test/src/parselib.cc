@@ -128,5 +128,6 @@ int tok_split(std::string& str, std::string delim, std::vector<std::string>& tok
  * Throws: None
  */
 void get_fifo_name(std::string& fifo_name, int writer, int reader) {
+	fifo_name.clear();
 	fifo_name = STR_FIFO_BASE + std::to_string(writer) + std::string ("-") + std::to_string(reader);
 }

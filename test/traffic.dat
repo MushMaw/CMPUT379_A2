@@ -1,0 +1,13 @@
+# Nothing to see here, folks
+
+# sw1 admits 1
+sw1 100 150
+sw3 300 400
+
+# Make sw1 wait 5 seconds, read a RELAY pkt, then read next line
+sw1 delay 5000
+sw1 200 100
+
+sw2 200 150
+sw2 delay 1000
+

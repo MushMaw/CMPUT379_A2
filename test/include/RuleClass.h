@@ -41,12 +41,7 @@ class Rule {
 
 		Rule();
 		Rule(std::string& serial_rule);
-		Rule(IP_Range src_ip, IP_Range dest_ip, ActType act_type, SwPort act_val, int pri) 
-			: src_ip(src_ip),
-			  dest_ip(dest_ip),
-			  pri(pri),
-			  act_type(act_type),
-			  act_val(act_val) {}
+		Rule(IP_Range src_ip, IP_Range dest_ip, ActType act_type, SwPort act_val, int pri);
 
 		void serialize(std::string& ser_rule);
 		void deserialize(std::string& ser_rule);

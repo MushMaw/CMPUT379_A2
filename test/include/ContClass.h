@@ -27,6 +27,7 @@
 #define CONT_WAIT_SW_START "Waiting for all switches to start...\n"
 #define CONT_SW_START_DONE "All switches have started.\n"
 #define CONT_EXIT_MSG "Shutting down Controller...\n"
+#define CONT_SW_CLIENT_CLOSED_MSG "Connection to switch %d has been lost\n"
 
 #define CONT_USER_LIST_CMD std::string("list")
 #define CONT_USER_EXIT_CMD std::string("exit")
@@ -74,6 +75,7 @@ class Controller {
 		void list();
 		void stop();
 		void print_log(Packet& pkt, int sw_idx, LogMode mode);
+		void handle_sw_termination(int sw_idx);
 		
 	public:
 		Controller(int argc, char *argv[]);

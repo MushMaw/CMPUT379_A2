@@ -32,8 +32,8 @@ Controller::Controller(int argc, char *argv[]) {
 		if (nswitch < 1) { throw Cont_Exception(ERR_NSWITCH_NON_POS, ERR_CONT_CONSTR_FUNC, 0); }
 		if (nswitch > MAX_NSWITCH) { throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX, ERR_CONT_CONSTR_FUNC, 0); }
 		this->nswitch = nswitch;
+
 		// Set placeholders for expected number of switches
-		
 		for (int i = 0; i < this->nswitch; i++) { this->running_sw.push_back((Switch *) NULL); }
 		this->running_sw_count = 0;
 
@@ -58,14 +58,10 @@ Controller::Controller(int argc, char *argv[]) {
  * Throws: None
  */
 Controller::~Controller() {
-	//std::cout << "Delete server\n";
 	delete this->server;
-	//std::cout << "Delete stats\n";
 	delete this->stats;
-	//std::cout << "Delete all sw\n";
 	for (int i = 0; i < this->nswitch; i++) {
 		delete this->running_sw[i];
-		//std::cout << "Closed sw: " << i << "\n";
 	}
 }
 
@@ -86,7 +82,7 @@ Controller::~Controller() {
 void Controller::init_switches() {
 	int next_ready_sw = -1;	
 
-	std::cout << CONT_WAIT_SW_START;
+	std::cout << CONT_WAIT_SW_START << "\n";
 	try {
 		while (this->running_sw_count != this->nswitch) {
 			this->server->poll_clients();
@@ -98,7 +94,7 @@ void Controller::init_switches() {
 			}
 		}
 	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_INIT_SWI_FUNC, e.get_traceback(), e.get_error_code()); }
-	std::cout << CONT_SW_START_DONE;
+	std::cout << "\n" << CONT_SW_START_DONE << "\n";
 }
 
 /**
@@ -130,7 +126,7 @@ void Controller::rcv_pkt(int sw_idx) {
 			} else if (pkt.ptype == PT_QUERY) {
 				this->handle_query(pkt, sw_idx);
 			} else {
-				throw Cont_Exception(ERR_INVALID_PKT_RCV, ERR_CONT_RCV_PKT_FUNC, 0);
+				std::cout << ERR_INVALID_PKT_RCV;
 			}
 
 			// Print receieved packet and log its type.
@@ -140,10 +136,35 @@ void Controller::rcv_pkt(int sw_idx) {
 			//std::cout << "log ok\n";
 			return;
 		} catch (CS_Skt_Exception& e) {
+			// Check if Switch closed unexpectedly
+			if (e.get_error_code() == ERR_CODE_PKT_CLOSED_FD) {
+				this->handle_sw_termination(sw_idx);
+				return;
+			}
 			attempts++;
 		}
 	}
 	throw Cont_Exception(ERR_CONT_MAX_RCV_ATTEMPTS, ERR_CONT_RCV_PKT_FUNC, 0);
+}
+
+/**
+ * Function: handle_sw_termination
+ * -----------------------
+ * After a Switch is detected as having closed unexpectedly, this function
+ * closes the client connection and outputs a message indicating the closure.
+ *
+ * Parameters:
+ *	- sw_idx: The Switch's index in the Controllers list of running Switches.
+ * Return Value: None
+ * Throws: None
+ */
+void Controller::handle_sw_termination(int sw_idx) {
+	int sw_id;
+
+	this->server->close_client(sw_idx);
+	sw_id = this->running_sw[sw_idx]->id;
+	fprintf(stdout, CONT_SW_CLIENT_CLOSED_MSG, sw_id);
+	std::cout << "\n";
 }
 
 /**
@@ -167,6 +188,11 @@ void Controller::send_pkt(Packet& pkt, int sw_idx) {
 			this->print_log(pkt, sw_idx, LOG_SEND_MODE);
 			return;
 		} catch (CS_Skt_Exception& e) {
+			// Check if Switch closed unexpectedly
+			if (e.get_error_code() == ERR_CODE_PKT_CLOSED_FD) {
+				this->handle_sw_termination(sw_idx);
+				return;
+			}
 			attempts++;
 		}
 	}	
@@ -192,6 +218,7 @@ void Controller::print_log(Packet& pkt, int sw_idx, LogMode mode) {
 	Header rcv_header;
 	Rule * send_rule = NULL;
 	
+	std::cout << "\n";
 	// Get Switch ID
 	sw_id = this->running_sw[sw_idx]->id;
 
@@ -229,6 +256,7 @@ void Controller::print_log(Packet& pkt, int sw_idx, LogMode mode) {
 		case PT_ADMIT:
 			break;
 	}
+
 }
 
 /**
@@ -300,10 +328,14 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	header = Header(que_pkt.msg);
 
 	// Find Switch with IP range that contains Header's dest IP
+	std::cout << "creating rule for this header...\n";
+	header.print();
+	std::cout << "header has destip=" << header.dest_ip << "\n";
 	for (int i = 0; i < nswitch; i++) {
 		if (i == sw_idx) { continue; }
 		sw = this->running_sw[i];
 		if (sw->ip_range.is_in_range(header.dest_ip)) {
+			std::cout << "target sw for this header is: " << sw->id << "\n";
 			dest_sw = sw->id;
 			//dest_sw_idx = i;
 			break;
@@ -320,9 +352,11 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	// Since Switches are arranged in increasing order, the correct port
 	// to forward to is determined by comparing Switch IDs.
 	else {
+		std::cout << "this rule is to forward\n";
 		act_type = AT_FORWARD;
 		if (dest_sw > sw_id) { act_val = SWK_PORT; }
 		else { act_val = SWJ_PORT; }
+		std::cout << "act_val is: " << act_val << "\n";
 		// Set destination IP range to Switch's IP range.
 		dest_ip = IP_Range(sw->ip_range.low, sw->ip_range.high);
 	}
@@ -333,6 +367,7 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	// Create and send new Rule to Switch.
 	rule = new Rule(src_ip, dest_ip, act_type, act_val, MIN_PRI);
 	rule->serialize(ser_rule);
+	std::cout << "ser rule is: " << ser_rule << "\n";
 	add_pkt.ptype = PT_ADD;
 	add_pkt.msg = ser_rule;
 	try {
@@ -377,6 +412,7 @@ void Controller::handle_user_cmd() {
  * Throws: None
  */
 void Controller::list() {
+	std::cout << "\n";
 	// List switch info
 	fprintf(stdout, CONT_PRINT_SW_INFO_HEADER, this->nswitch);
 
@@ -441,19 +477,20 @@ void Controller::run() {
 			if (this->keep_running == false) {
 				break;
 			}
-			/**
+			
 			// Poll switches for packets, then handle each incoming packet (if any)
 			this->server->poll_clients();
 			next_ready_sw = this->server->get_next_ready_cl();
 			while (next_ready_sw != -1) {
 				this->rcv_pkt(next_ready_sw);
 				next_ready_sw = this->server->get_next_ready_cl(); 
-			}*/
+			}
 		}
 	} catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
 	  catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	// Close all file descriptors on exit
-	std::cout << CONT_EXIT_MSG;
 	this->stop();
+
+	std::cout << "\n" << CONT_EXIT_MSG << "\n";
 }

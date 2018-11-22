@@ -112,10 +112,10 @@ size_t Packet::read_from_fd(int fd) {
 	size_t total_read = 0, bytes_read = 0;
 
 	memset(buffer, 0, PKT_LEN + 1);
-	//std::cout << "in rcv pkt in pkt class\n";
+	std::cout << "in rcv pkt in pkt class\n";
 	while (total_read < PKT_LEN + 1) {
 		bytes_read = read(fd, buffer, PKT_LEN + 1);
-		//std::cout << "read bytes: " << bytes_read << "\n";
+		std::cout << "read bytes: " << bytes_read << "\n";
 		if (bytes_read < 0) {
 			throw Pkt_Exception(ERR_PKT_READ, ERR_PKT_READ_FD_FUNC, 0);
 		// If read returns 0, throw error indicating closed fd
@@ -125,17 +125,15 @@ size_t Packet::read_from_fd(int fd) {
 		total_read += bytes_read;
 		// Save read bytes to string object.
 		buffer_op = buffer;
-		//std::cout << "moved buffer to string\n";
 		ser_pkt += buffer_op;
 		memset(buffer, 0, PKT_LEN + 1);
 	}
-	//std::cout << "done reading\n";
+	std::cout << "Total read: " << total_read << "\n";
 	// Try to deserialize read string
 	try {
-		//std::cout << "pkt text: " << ser_pkt << "\n";
 		this->deserialize(ser_pkt);
-		//std::cout << "pkt deser works\n" << "\n";
 	} catch (Pkt_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_READ_FD_FUNC, e.get_traceback(), e.get_error_code()); }
+	
 	return total_read;
 }
 
@@ -153,9 +151,11 @@ size_t Packet::write_to_fd(int fd) {
 	std::string ser_pkt("");
 	size_t total_wrtn = 0, bytes_wrtn = 0;
 
+	std::cout << "in write_to_fd\n";
 	this->serialize(ser_pkt);
 	while(total_wrtn < PKT_LEN + 1) {
 		bytes_wrtn = write(fd, &ser_pkt.c_str()[total_wrtn], (ser_pkt.length() + 1 - total_wrtn));
+		std::cout << "Wrote bytes: " << bytes_wrtn << "\n";
 		if (bytes_wrtn < 0) {
 			// Check if read end of fd is closed, otherwise throw generic error
 			if (errno == EPIPE) { throw Pkt_Exception(ERR_PKT_WRITE_CLOSED_READ_END, ERR_PKT_WRITE_FD_FUNC, ERR_CODE_PKT_CLOSED_FD); }
@@ -165,5 +165,6 @@ size_t Packet::write_to_fd(int fd) {
 		}
 		total_wrtn += bytes_wrtn;
 	}
+	std::cout << "Total Wrote bytes: " << total_wrtn << "\n";
 	return total_wrtn;
 }

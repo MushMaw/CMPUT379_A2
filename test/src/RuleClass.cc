@@ -20,6 +20,15 @@ Rule::Rule(std::string& ser_rule) {
 	this->deserialize(ser_rule);
 }
 
+Rule::Rule(IP_Range src_ip, IP_Range dest_ip, ActType act_type, SwPort act_val, int pri) {
+	this->src_ip = src_ip;
+	this->dest_ip = dest_ip;
+	this->act_type = act_type;
+	this->act_val = act_val;
+	this->pri = pri;
+	this->pkt_count = 0;
+}
+
 /**
  * Function: deserialize
  * -----------------------
@@ -46,8 +55,9 @@ void Rule::deserialize(std::string& ser_rule) {
 	this->dest_ip.high = str_to_int(toks.at(3));
 
 	this->act_type = static_cast<ActType>(str_to_int(toks.at(4)));
-	this->pri = str_to_int(toks.at(5));
-	this->pkt_count = str_to_int(toks.at(6));
+	this->act_val = static_cast<SwPort>(str_to_int(toks.at(5)));
+	this->pri = str_to_int(toks.at(6));
+	this->pkt_count = str_to_int(toks.at(7));
 	} catch (Parse_Exception& e) { throw Rule_Exception(e.what(), ERR_RULE_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
@@ -62,6 +72,7 @@ void Rule::deserialize(std::string& ser_rule) {
  * Throws: None
  */
 void Rule::serialize(std::string& ser_rule) {
+	ser_rule.clear();
 	ser_rule += std::to_string(this->src_ip.low) + RULE_DELIM;
 	ser_rule += std::to_string(this->src_ip.high) + RULE_DELIM;
 
@@ -69,6 +80,7 @@ void Rule::serialize(std::string& ser_rule) {
 	ser_rule += std::to_string(this->dest_ip.high) + RULE_DELIM;
 
 	ser_rule += std::to_string(this->act_type) + RULE_DELIM;
+	ser_rule += std::to_string(this->act_val) + RULE_DELIM;
 	ser_rule += std::to_string(this->pri) + RULE_DELIM;
 	ser_rule += std::to_string(this->pkt_count);
 }

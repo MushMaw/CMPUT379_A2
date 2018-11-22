@@ -192,14 +192,36 @@ size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
 	return bytes_read;
 }
 
+/**
+ * Function: close_all
+ * -----------------------
+ * Closes all client sockets of server.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
 void Cont_Server::close_all() {
 	for (int i = 0; i < num_clients; i++) {
 		this->close_client(i);
 	}
 }
 
+/**
+ * Function: close_client
+ * -----------------------
+ * Closes specific client socket.
+ *
+ * Parameters: 
+ *	- cl_idx: Index of client socket in server's list of clients
+ * Return Value: None
+ * Throws: None
+ */
 void Cont_Server::close_client(int cl_idx) {
-	close(this->cl_pfds[cl_idx].fd);
+	if (this->cl_pfds[cl_idx].fd != -1) {
+		close(this->cl_pfds[cl_idx].fd);
+		this->cl_pfds[cl_idx].fd = -1;
+	}
 }
 
 /**
@@ -218,7 +240,6 @@ Sw_Client::Sw_Client(std::string& address, int port_num) {
 	struct sockaddr_in server;
 	struct pollfd cont_pfd;
 	struct hostent *hp = NULL;
-	bool valid_addr = false;
 
 	this->port_num = port_num;
 	this->cl_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -330,6 +351,15 @@ bool Sw_Client::is_pkt_from_server() {
 	} else { return false; }
 }
 
+/**
+ * Function: close_client
+ * -----------------------
+ * Closes Switch client's socket to server.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
 void Sw_Client::close_client() {
 	close(this->cl_socket);
 }

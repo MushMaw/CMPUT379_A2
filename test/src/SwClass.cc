@@ -9,6 +9,9 @@
 #include "SwClass.h"
 
 
+/**
+ * Switch Constructors
+ */
 Switch::Switch(int id, int swj_id, int swk_id, IP_Range ip_range) : id(id),
 								    swj_id(swj_id),
 								    swk_id(swk_id),
@@ -40,10 +43,10 @@ Switch::Switch(int argc, char *argv[]){
 	try {
 		// Verify that traffic file exists and open it if it does.
 		if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND, ERR_SW_CONSTR_FUNC, 0);}
-		this->tfile.open(argv[2]);
+		this->tfile = fopen(argv[2], "r");
 
 		// Convert char arguments to string objects
-		tfile_name = argv[2];
+		this->tfile_name = argv[2];
 		id_str = argv[1]; swj_id_str = argv[3]; swk_id_str = argv[4];
 		ip_range_str = argv[5];
 		address_str = argv[6];
@@ -67,11 +70,8 @@ Switch::Switch(int argc, char *argv[]){
 
 		// Initialize connection to Controller server
 		portnum = str_to_int(portnum_str);
-		//std::cout << "Testing print...\n";
-		//this->print();
 		this->client = new Sw_Client(address_str, portnum);
 
-		//std::cout << "Client init works\n";
 		this->timer = new Timer();
 		this->stats = new SwStats();
 
@@ -185,7 +185,10 @@ void Switch::serialize(std::string& ser_sw) {
  */
 void Switch::poll_ports() {
 	struct pollfd * port_pfds_ptr = &(this->port_pfds[0]);
+	// Poll adjacent switches (if any)
 	if (poll(port_pfds_ptr, this->port_pfds.size(), 0) < 0) { throw Sw_Exception(ERR_SW_POLL_FAIL, ERR_SW_POLL_PORTS_FUNC, 0); }
+
+	// Poll controller
 	try {
 		this->client->poll_server();
 	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_POLL_PORTS_FUNC, e.get_traceback(), e.get_error_code()); }
@@ -227,10 +230,10 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 				this->client->send_pkt(pkt);
 				break;
 			case SWJ_PORT:
-				pkt.write_to_fd(this->port_pfds[SWJ_PORT - 1].fd);
+				pkt.write_to_fd(this->swj_wr_fifo);
 				break;
 			case SWK_PORT:
-				pkt.write_to_fd(this->port_pfds[SWK_PORT - 1].fd);
+				pkt.write_to_fd(this->swk_wr_fifo);
 				break;
 			default:
 				return;
@@ -266,10 +269,10 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 				//std::cout << "pkt got from cont\n";
 				break;
 			case SWJ_PORT:
-				pkt.read_from_fd(this->port_pfds[SWJ_PORT].fd);
+				pkt.read_from_fd(this->port_pfds[0].fd);
 				break;
 			case SWK_PORT:
-				pkt.read_from_fd(this->port_pfds[SWK_PORT].fd);
+				pkt.read_from_fd(this->port_pfds[1].fd);
 				break;
 			default:
 				return;
@@ -300,6 +303,7 @@ void Switch::print_log(Packet &pkt, int sd, LogMode mode) {
 	std::string src_str(""), dest_str("");
 	Header header;
 
+	std::cout << "\n";
 	// Define packet source and destination
 	if (mode == LOG_SEND_MODE) {
 		src = this->id;
@@ -351,6 +355,7 @@ void Switch::print_log(Packet &pkt, int sd, LogMode mode) {
 void Switch::start() {
 	Packet open_pkt, ack_pkt;
 	std::string ser_sw("");
+	IP_Range init_src(0, MAX_IP);
 
 	// Prepare OPEN pkt
 	this->serialize(ser_sw);
@@ -367,8 +372,65 @@ void Switch::start() {
 				if (ack_pkt.ptype == PT_ACK) { break; }
 			}	
 		}
+		// Install initial rule for this Switch
+		this->install_rule(init_src, this->ip_range, AT_DROP, CONT_PORT, MIN_PRI);
+
+		// Open read/write FIFO's to adjacent Switch's (if any)
+		this->open_adj_sw_fifos();
+		
 	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback(), e.get_error_code()); }
 	  catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback(), e.get_error_code()); }
+}
+
+/**
+ * Function: open_adj_sw_fifos
+ * -----------------------
+ * Opens read/write FIFOs for swj and swk and prepares for polling of read
+ * FIFO's of each. 
+ * If swj and/or swk do not exist, the poll structures must still be created
+ * for the function "poll_ports" to work. However, the "fd" value is set to
+ * prevent the polling from ever indicating incoming data.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
+void Switch::open_adj_sw_fifos() {
+	struct pollfd sw_pfd;
+	std::string fifo_name;
+
+	sw_pfd.fd = -1;
+	sw_pfd.events = POLLIN;
+	sw_pfd.revents = 0;
+
+	// Init read/write fifos for Switch J and K, and prepare both for polling
+	// Init Switch J
+	
+	get_fifo_name(fifo_name, this->id, this->swj_id);
+	if (this->swj_id == -1) {
+		this->swj_wr_fifo = -1;
+		sw_pfd.fd = -1;
+		this->port_pfds.push_back(sw_pfd);
+	} else {
+		std::cout << "Try to open swj\n";
+		this->swj_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
+		sw_pfd.fd = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
+		this->port_pfds.push_back(sw_pfd);
+	}
+
+	// Init Switch K
+	get_fifo_name(fifo_name, this->id, this->swk_id);
+	if (this->swk_id == -1) {
+		this->swk_wr_fifo = -1;
+		sw_pfd.fd = -1;
+		this->port_pfds.push_back(sw_pfd);
+	} else {
+		std::cout << "Try to open swk\n";
+		this->swk_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
+		sw_pfd.fd = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
+		this->port_pfds.push_back(sw_pfd);
+	}
+	std::cout << "Opened fifo's successfully\n";
 }
 
 /**
@@ -384,15 +446,18 @@ void Switch::start() {
 void Switch::list() {
 	int ft_len = this->flow_table.size();
 
+	std::cout << "\n";
 	// Print flow table entries
 	std::cout << SW_PRINT_FT_TABLE_TITLE;
 	for (int i = 0; i < ft_len; i++) {
 		fprintf(stdout, SW_PRINT_FT_TABLE_IDX, i);
 		this->flow_table[i]->print();
 	}
+	std::cout << "\n";
 
 	// Print packet stats
 	this->stats->print();
+	std::cout << "\n";
 }
 
 /**
@@ -413,29 +478,32 @@ void Switch::list() {
 void Switch::read_next_traffic_line() {
 	Header header;
 	std::string line("");
-	char c, line_c_str[MAX_LINE_READ];
+	char line_c_str[MAX_LINE_READ];
+
+	memset(line_c_str, 0, MAX_LINE_READ);
 
 	// Check if end of traffic file has been reached.
-	if (this->tfile.eof()) { return; }
+	if (!(fgets(line_c_str, sizeof(line_c_str), this->tfile))) { return; }
+	line = line_c_str;
 
 	// If next line is empty or is a comment (starts with '#'), do nothing.
-	c = this->tfile.peek();
-	this->tfile.getline(line_c_str, MAX_LINE_READ);
-	line = line_c_str;
-        if (c == '#' || c == '\n') { return; }	
-	std::cout << "char is: " << c << "\n";
-	std::cout << "line is " << line << "\n";
+        if (line.front() == '#' || line.front() == '\n') { return; }
+	// Remove newline char from read line
+	line = line.substr(0, line.length() - 1);	
 
 	try {
+		// Get header from line
 		header.deserialize(line);
 		if (header.swi == this->id) {
+			// Log header admitted from traffic file
+			this->stats->log_rcv(PT_ADMIT);
+			// Check if header is delay type
 			if (header.timeout > 0) {
-				//TODO: Delay for some time
 				this->start_traffic_delay(header.timeout);
 			} else {
 				this->handle_header(header);
 			}
-		}
+		} 
 	} catch (Header_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_READ_TFILE_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
@@ -496,7 +564,9 @@ int Switch::query_cont(Header& header) {
 		this->send_pkt(que_pkt, CONT_PORT);
 		// Wait for ADD Packet, then push new Rule to flow table
 		while (1) {
+			this->poll_ports();
 			if (this->client->is_pkt_from_server()) {
+				std::cout << "Controller sent a rule?\n";
 				this->client->rcv_pkt(add_pkt);
 				new_rule = new Rule(add_pkt.msg);
 				this->flow_table.push_back(new_rule);
@@ -570,9 +640,11 @@ void Switch::install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, SwPo
  * Throws: None
  */
 void Switch::start_traffic_delay(int delay) {
+	std::cout << "\n";
 	fprintf(stdout, SW_DELAY_START_MSG, delay);
 	this->timer->start(delay);
 	this->is_delayed = true;
+	std::cout << "\n";
 }
 
 /**
@@ -604,7 +676,7 @@ void Switch::handle_user_cmd() {
 /**
  * Function: stop
  * -----------------------
- * Closes client socket and FIFO file descriptors for adjacent switches
+ * Closes client socket, traffic file, and FIFO file descriptors for adjacent switches
  *
  * Parameters: None
  * Return Value: None
@@ -612,6 +684,7 @@ void Switch::handle_user_cmd() {
  */
 void Switch::stop() {
 	this->client->close_client();
+	fclose(this->tfile);
 	// TODO: Close fifo fds and tfile
 }
 
@@ -646,7 +719,7 @@ void Switch::run() {
 			// Check if switch is currently delayed before reading
 			if (this->timer->at_target_duration() == true) {
 				if (this->is_delayed == true) {
-					std::cout << SW_DELAY_END_MSG;
+					std::cout << "\n" << SW_DELAY_END_MSG << "\n";
 					this->is_delayed = false;
 				}
 				this->read_next_traffic_line();
@@ -662,19 +735,22 @@ void Switch::run() {
 			if (this->keep_running == false) {
 				break;
 			}
-			/**
+			
 			// Poll adjacent switches
 			this->poll_ports();
 			if (this->port_pfds[SWJ_PORT].revents & POLLIN) {
+				std::cout << "data from swj?\n";
 				this->rcv_pkt(pkt, SWJ_PORT);
 			} else if (this->port_pfds[SWK_PORT].revents & POLLIN) {
+				std::cout << "data from swk?\n";
 				this->rcv_pkt(pkt, SWK_PORT);
 			}
-			*/
+			
 		} 
 	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
-	// std::cout << "end of run\n";
-	//this->stop();
+	
+	this->stop();
+	std::cout << "\n" << SW_EXIT_MSG << "\n";
 }
 
 /**
