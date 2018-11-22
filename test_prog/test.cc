@@ -43,10 +43,16 @@ void test_rule() {
 
 void run_serv() {
 	Cont_Server * serv = NULL;
-	std::string cl_msg("Hello, client!");
-	int portnum = 9586, num_cl = 2, next_cl = -1, rcv_num = 0;
+	std::string ser_header("");
+	int portnum = 9526, num_cl = 2, next_cl = -1, rcv_num = 0;
 	Timer * tim = new Timer();
-	Packet pkt, send_pkt(PT_OPEN, cl_msg);
+	Header header(1, 200, 300), rcv_head(1,1,1);
+	Packet send_pkt, rcv_pkt;
+
+	// Prepare pkt
+	header.serialize(ser_header);
+	send_pkt.ptype = PT_QUERY;
+	send_pkt.set_msg(ser_header);
 
 	try {
 		std::cout << "Starting server...\n";
@@ -60,8 +66,12 @@ void run_serv() {
 			if (next_cl > -1) {
 				std::cout << next_cl; 
 				std::cout << "Client is ready, getting pkt...\n";
-				serv->rcv_pkt(pkt, next_cl);
-				std::cout << "Msg is: " << pkt.msg << "\n";
+				serv->rcv_pkt(rcv_pkt, next_cl);
+
+				std::cout << "try to deser header...\n";
+				rcv_head.deserialize(rcv_pkt.msg);
+				rcv_head.print();				
+				
 				rcv_num++;
 				
 				std::cout << "Sending msg to client...\n";
@@ -73,7 +83,7 @@ void run_serv() {
 	} catch (CS_Skt_Exception& e) { 
 		if (e.get_error_code() == ERR_CODE_PKT_CLOSED_FD) { std::cout << "Client seems dead\n"; }
 		else { e.print_traceback(); std::cout << "Error code: " << e.get_error_code() << "\n"; }
-	}
+	} catch (Header_Exception& e) { e.print_traceback(); }
 	tim->start(5000);
 	while (tim->at_target_duration() == false) {}
 	return;
@@ -81,28 +91,38 @@ void run_serv() {
 
 void run_client() {
 	Sw_Client * client = NULL;
-	int portnum = 9586;
-	std::string address("localhost"), pkt_msg("Hello, server!");
-	Packet pkt(PT_OPEN, pkt_msg), rcv_pkt;
+	int portnum = 9526;
+	std::string address("localhost"), ser_head("");
+	Packet send_pkt, rcv_pkt;
 	Timer * wait_tim = new Timer();
+
+	Header send_header(1, 100, 200), rcv_head(1,1,1);
 	wait_tim->start(10000);
+
+	send_pkt.ptype = PT_QUERY;
+	send_header.serialize(ser_head);
+	send_pkt.set_msg(ser_head);
+
 	try {
 
 		std::cout << "Starting client...\n";
 		client = new Sw_Client(address, portnum);
 
 		std::cout << "Sending Pkt to server...\n";
-		client->send_pkt(pkt);
+		client->send_pkt(send_pkt);
 
 		while (1) {
 			client->poll_server();
 			if (client->is_pkt_from_server()) {
 				client->rcv_pkt(rcv_pkt);
-				std::cout << "From server: " << rcv_pkt.msg << "\n";
+				std::cout << "msg is: " << rcv_pkt.msg << "\n";
+				rcv_head.deserialize(rcv_pkt.msg);
+				rcv_head.print();
 				break;
 			}
 		}
 	} catch (CS_Skt_Exception& e) { e.print_traceback(); }
+	  catch (Header_Exception& e) { e.print_traceback(); }
 	while (wait_tim->at_target_duration() == false) {}
 	return;
 }
@@ -132,6 +152,7 @@ void test_pkt() {
 		if (des_pkt->msg == msg_test) { std::cout << "SAME\n"; }
 		else { std::cout << "DIFF\n"; }
 	} catch (Pkt_Exception& e) { e.print_traceback(); }
+	  catch (Header_Exception& e) { e.print_traceback(); }
 }
 	
 

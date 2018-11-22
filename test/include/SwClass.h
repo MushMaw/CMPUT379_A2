@@ -17,6 +17,7 @@
 
 #include "parselib.h"
 #include "constants.h"
+#include "CS_log.h"
 
 #include "RuleClass.h"
 #include "PktClass.h"
@@ -24,10 +25,9 @@
 #include "PktStatsClass.h"
 #include "TimerClass.h"
 #include "HeaderClass.h"
-#include "CS_log.h"
 
-#define ACT_FORWARD 1
-#define ACT_DROP 2
+
+#define SW_ARG_COUNT 8
 
 #define NULL_PORT std::string ("null")
 #define SW_DELIM std::string(" ")
@@ -39,6 +39,9 @@
 #define SW_PRINT_FT_TABLE_TITLE "Flow Table:\n"
 #define SW_PRINT_FT_TABLE_IDX "[%d]"
 
+#define SW_DELAY_START_MSG "** Entering a delay period of %d msec\n"
+#define SW_DELAY_END_MSG "** Delay period ended\n"
+
 #define ERR_SW_CONSTR_FUNC std::string("Switch::Switch()")
 #define ERR_SW_DESERIALIZE_FUNC std::string("Switch::deserialize()")
 #define ERR_SW_POLL_PORTS_FUNC std::string("Switch::poll_ports()")
@@ -48,6 +51,8 @@
 #define ERR_SW_QUERY_CONT_FUNC std::string("Switch::query_cont()")
 #define ERR_SW_EXECUTE_RULE_FUNC std::string("Switch::execute_rule()")
 #define ERR_SW_RUN_FUNC std::string("Switch::run()")
+#define ERR_SW_READ_TFILE_FUNC std::string("Switch::read_next_traffic_line()")
+#define ERR_SW_HANDLE_HEADER_FUNC std::string("Switch::handle_header()")
 
 #define ERR_INVALID_SW_CMD " is not a valid command\n"
 #define ERR_TFILE_NOT_FOUND "trafficfile not found\n"
@@ -70,7 +75,7 @@ class Switch {
 		std::vector<Rule *> flow_table;
 		std::vector<struct pollfd> port_pfds;
 		std::ifstream tfile;
-		bool keep_running;
+		bool keep_running, is_delayed;
 
 		Sw_Client * client;
 		SwStats * stats;
@@ -83,11 +88,13 @@ class Switch {
 		Switch(int argc, char *argv[]);
 		Switch(int id, int swj_id, int swk_id, IP_Range ip_range);
 		Switch(std::string& ser_sw);
+		~Switch();
 
 		void serialize(std::string& ser_sw);
 		void deserialize(std::string& ser_sw);
 
 		void run();
+		void stop();
 		void start();
 		void poll_ports();
 		void list();

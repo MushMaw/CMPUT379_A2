@@ -22,8 +22,8 @@
 
 #define EMPTY_STR std::string("")
 
-#define ERR_CONT_CL_FORMAT "format: ./a2sdn cont nSwitch\n"
-#define ERR_SW_CL_FORMAT "format: ./a2sdn swi trafficFile [swj|null] [swk|null] ip_low-ip_high\n"
+#define ERR_CONT_CL_FORMAT "format: ./a3sdn cont nSwitch portnum\n"
+#define ERR_SW_CL_FORMAT "format: ./a3sdn swi trafficFile [swj|null] [swk|null] ip_low-ip_high address portnum\n"
 
 enum SwPort {CONT_PORT, SWJ_PORT, SWK_PORT, IP_PORT};
 
@@ -41,7 +41,6 @@ class Traceback_Exception : public std::runtime_error {
 		Traceback_Exception(const char* msg, const std::string cur_func, int error_code) : std::runtime_error(msg) {
 			this->traceback = "";
 			this->traceback += cur_func;
-			std::cout << "setting error code to: " << error_code << "\n";
 			this->error_code = error_code;
 		}
 		void print_traceback() { 

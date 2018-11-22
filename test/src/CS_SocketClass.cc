@@ -56,7 +56,6 @@ Cont_Server::Cont_Server(int port_num, int num_clients) {
 
 	// Accepts connections from specified number of clients
 	listen(this->serv_sock, num_clients);
-	this->accept_clients();
 }
 
 /**
@@ -193,6 +192,16 @@ size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
 	return bytes_read;
 }
 
+void Cont_Server::close_all() {
+	for (int i = 0; i < num_clients; i++) {
+		this->close_client(i);
+	}
+}
+
+void Cont_Server::close_client(int cl_idx) {
+	close(this->cl_pfds[cl_idx].fd);
+}
+
 /**
  * Function: Sw_Client Constructor
  * -----------------------
@@ -262,6 +271,7 @@ size_t Sw_Client::rcv_pkt(Packet& pkt) {
 	size_t bytes_read;
 	try {
 		bytes_read = pkt.read_from_fd(this->cl_socket);
+		//std::cout << "in sw_client, read success\n";
 	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_read;
 }
@@ -318,4 +328,8 @@ bool Sw_Client::is_pkt_from_server() {
 		this->pfd[0].revents = 0;	
 		return true;
 	} else { return false; }
+}
+
+void Sw_Client::close_client() {
+	close(this->cl_socket);
 }

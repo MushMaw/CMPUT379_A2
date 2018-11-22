@@ -74,7 +74,6 @@ void IP_Range::deserialize(std::string& ser_ip) {
 	std::string ip_val_str("");
 
 	if ((delim_idx = ser_ip.find("-")) == -1) { throw IP_Range_Exception(ERR_IP_RANGE_FORMAT, ERR_IP_RANGE_DESERIALIZE_FUNC, 0); }
-	std::cout << "dash found\n";
 
 	try {
 		ip_val_str = ser_ip.substr(0, delim_idx);

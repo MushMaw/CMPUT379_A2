@@ -38,7 +38,7 @@ void get_src_dest_str(int sr, std::string& sr_str) {
  * Return Value: None
  * Throws: None
  */
-void print_log_start(int src, int dest, LogMode mode) {
+void print_log_start(int src, int dest, LogMode mode, PktType ptype) {
 	std::string src_str(""), dest_str("");
 
 	// Print whether Packet was received or sent
@@ -52,4 +52,23 @@ void print_log_start(int src, int dest, LogMode mode) {
 	get_src_dest_str(src, src_str);
 	get_src_dest_str(dest, dest_str);
 	fprintf(stdout, LOG_SRC_DEST_STR, src_str.c_str(), dest_str.c_str());
+
+	// Print Packet type
+	switch(ptype) {
+		case PT_OPEN:
+			std::cout << PTYPE_STR_OPEN; break;
+		case PT_ACK:
+			std::cout << PTYPE_STR_ACK; break;
+		case PT_QUERY:
+			std::cout << PTYPE_STR_QUERY; break;
+		case PT_ADD:
+			std::cout << PTYPE_STR_ADD; break;
+		case PT_RELAY:
+			std::cout << PTYPE_STR_RELAY; break;
+		case PT_ADMIT:
+			std::cout << PTYPE_STR_ADMIT; break;
+		case PT_UNINIT:
+			std::cout << PTYPE_STR_UNINIT; break;
+	}
+	std::cout << "\n";
 }

@@ -58,6 +58,8 @@ class Cont_Server {
 
 		void accept_clients();
 		void poll_clients();
+		void close_client(int cl_idx);
+		void close_all();
 
 		bool client_is_ready(int cl_idx);
 		int get_next_ready_cl();
@@ -78,6 +80,8 @@ class Sw_Client {
 		bool is_pkt_from_server();
 		size_t send_pkt(Packet& pkt);
 		size_t rcv_pkt(Packet& pkt);
+
+		void close_client();
 };
 
 #endif

@@ -18,12 +18,6 @@
 #define PKT_DELIM std::string (" ")
 #define PKT_EMPTY_MSG std::string("")
 
-#define PTYPE_STR_OPEN "[OPEN]"
-#define PTYPE_STR_ACK "[ACK]"
-#define PTYPE_STR_QUERY "[QUERY]"
-#define PTYPE_STR_ADD "[ADD]"
-#define PTYPE_STR_RELAY "[RELAY]"
-
 #define ERR_CODE_PKT_CLOSED_FD 1000
 
 #define ERR_PKT_READ_FD_FUNC std::string("Packet::read_from_fd()")

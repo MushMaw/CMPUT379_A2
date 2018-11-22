@@ -18,13 +18,15 @@
 
 #include "parselib.h"
 #include "constants.h"
+#include "CS_log.h"
 
-#define CONT_ARG_COUNT 3
+#define CONT_ARG_COUNT 4
 #define CONT_MAX_SEND_ATTEMPTS 10
 #define CONT_MAX_RCV_ATTEMPTS 10
 
-#define CONT_WAIT_SW_START "Waiting for all switches to start..."
-#define CONT_SW_START_DONE "All switches have started."
+#define CONT_WAIT_SW_START "Waiting for all switches to start...\n"
+#define CONT_SW_START_DONE "All switches have started.\n"
+#define CONT_EXIT_MSG "Shutting down Controller...\n"
 
 #define CONT_USER_LIST_CMD std::string("list")
 #define CONT_USER_EXIT_CMD std::string("exit")
@@ -71,9 +73,11 @@ class Controller {
 		void handle_user_cmd();
 		void list();
 		void stop();
+		void print_log(Packet& pkt, int sw_idx, LogMode mode);
 		
 	public:
 		Controller(int argc, char *argv[]);
+		~Controller();
 		void run();
 };
 
