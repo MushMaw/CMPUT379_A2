@@ -32,4 +32,4 @@ clean:
 	$(RM) $(OBJ) $(EXE)
 
 tar:
-	tar -cvf submit.tar include/ obj/ src/ a3Makefile
+	tar -cvf submit.tar include/ obj/ src/ a3Makefile a3Report.pdf
