@@ -95,11 +95,14 @@ class Controller {
 		ContStats * stats;
 
 		void init_switches();
+
 		void rcv_pkt(int sw_idx);
 		void send_pkt(Packet& pkt, int sw_idx);
+
 		void open_new_sw(Packet &open_pkt, int sw_idx);
 		void handle_query(Packet &que_pkt, int sw_idx);
 		void handle_user_cmd();
+
 		void list();
 		void stop();
 		void print_log(Packet& pkt, int sw_idx, LogMode mode);
