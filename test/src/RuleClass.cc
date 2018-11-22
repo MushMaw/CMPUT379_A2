@@ -45,7 +45,7 @@ void Rule::deserialize(std::string& ser_rule) {
 	int count;
 
 	count = tok_split(ser_rule, RULE_DELIM, toks_ptr);
-	if (count != 7) { throw Rule_Exception(ERR_RULE_SER_FORMAT, ERR_RULE_DESERIALIZE_FUNC, 0); }
+	if (count != 8) { throw Rule_Exception(ERR_RULE_SER_FORMAT, ERR_RULE_DESERIALIZE_FUNC, 0); }
 
 	try {
 	this->src_ip.low = str_to_int(toks.at(0));

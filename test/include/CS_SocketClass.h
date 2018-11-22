@@ -23,6 +23,7 @@
 #define ERR_CS_SKT_SOCKET_BIND "Error in binding socket\n"
 #define ERR_CS_SKT_SOCKET_CONNECT "Error in connecting socket\n"
 #define ERR_CS_SKT_SOCKET_ACCEPT "Error in accepting connection\n"
+#define ERR_CS_SKT_NULL_HP "gethostbyname() returned null\n"
 
 #define ERR_CONT_SERVER_CONSTR_FUNC std::string("Cont_Server::Cont_Server()")
 #define ERR_CONT_SERVER_ACC_CL_FUNC std::string("Cont_Server::accept_clients()")

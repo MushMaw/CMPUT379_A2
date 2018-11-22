@@ -22,8 +22,7 @@
 
 #define ERR_PKT_READ_FD_FUNC std::string("Packet::read_from_fd()")
 #define ERR_PKT_WRITE_FD_FUNC std::string("Packet::write_to_fd()")
-#define ERR_PKT_PRINT_LOG_FUNC std::string("Packet::print_log()")
-#define ERR_PKT_DESERIALIZE_FUNC std::string("Packet::print_log()")
+#define ERR_PKT_DESERIALIZE_FUNC std::string("Packet::deserialize()")
 
 #define ERR_PKT_READ "Error during read from file descriptor\n"
 #define ERR_PKT_READ_CLOSED_WRITE_END "Write End of fd is closed\n"

@@ -248,7 +248,7 @@ Sw_Client::Sw_Client(std::string& address, int port_num) {
 	}
 
 	hp = gethostbyname(address.c_str());
-	if (hp == (struct hostent *) NULL) { std::cout << "Null hp\n"; exit(1); }
+	if (hp == (struct hostent *) NULL) { throw CS_Skt_Exception(ERR_CS_SKT_NULL_HP, ERR_SW_CLIENT_CONSTR_FUNC, 0); }
 
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = hp->h_addrtype;
@@ -292,7 +292,6 @@ size_t Sw_Client::rcv_pkt(Packet& pkt) {
 	size_t bytes_read;
 	try {
 		bytes_read = pkt.read_from_fd(this->cl_socket);
-		//std::cout << "in sw_client, read success\n";
 	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_read;
 }

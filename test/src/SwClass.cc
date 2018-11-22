@@ -92,17 +92,12 @@ Switch::Switch(int argc, char *argv[]){
 Switch::~Switch() {
 	int ft_len = this->flow_table.size();
 
-	//std::cout << "Delete all ft entries\n";
 	for (int i = 0; i < ft_len; i++) {
-		//std::cout << "Deleting rule: " << i << "\n";
 		delete this->flow_table[i];
 	}
 
-	//std::cout << "delete client\n";
 	delete this->client;
-	//std::cout << "delete timer\n";
 	delete this->timer;
-	//std::cout << "delete stats\n";
 	delete this->stats;
 }
 
@@ -266,7 +261,6 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 		switch(port) {
 			case CONT_PORT:
 				this->client->rcv_pkt(pkt);
-				//std::cout << "pkt got from cont\n";
 				break;
 			case SWJ_PORT:
 				pkt.read_from_fd(this->port_pfds[0].fd);
@@ -303,7 +297,6 @@ void Switch::print_log(Packet &pkt, int sd, LogMode mode) {
 	std::string src_str(""), dest_str("");
 	Header header;
 
-	std::cout << "\n";
 	// Define packet source and destination
 	if (mode == LOG_SEND_MODE) {
 		src = this->id;
@@ -339,6 +332,7 @@ void Switch::print_log(Packet &pkt, int sd, LogMode mode) {
 		case PT_UNINIT:
 			break;
 	}
+	std::cout << "\n";
 }
 
 /**
@@ -406,31 +400,32 @@ void Switch::open_adj_sw_fifos() {
 	// Init read/write fifos for Switch J and K, and prepare both for polling
 	// Init Switch J
 	
-	get_fifo_name(fifo_name, this->id, this->swj_id);
 	if (this->swj_id == -1) {
 		this->swj_wr_fifo = -1;
 		sw_pfd.fd = -1;
 		this->port_pfds.push_back(sw_pfd);
 	} else {
-		std::cout << "Try to open swj\n";
+		get_fifo_name(fifo_name, this->id, this->swj_id);
 		this->swj_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
+
+		get_fifo_name(fifo_name, this->swj_id, this->id);
 		sw_pfd.fd = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
 		this->port_pfds.push_back(sw_pfd);
 	}
 
 	// Init Switch K
-	get_fifo_name(fifo_name, this->id, this->swk_id);
 	if (this->swk_id == -1) {
 		this->swk_wr_fifo = -1;
 		sw_pfd.fd = -1;
 		this->port_pfds.push_back(sw_pfd);
 	} else {
-		std::cout << "Try to open swk\n";
+		get_fifo_name(fifo_name, this->id, this->swk_id);
 		this->swk_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
+
+		get_fifo_name(fifo_name, this->swk_id, this->id);
 		sw_pfd.fd = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
 		this->port_pfds.push_back(sw_pfd);
 	}
-	std::cout << "Opened fifo's successfully\n";
 }
 
 /**
@@ -495,8 +490,6 @@ void Switch::read_next_traffic_line() {
 		// Get header from line
 		header.deserialize(line);
 		if (header.swi == this->id) {
-			// Log header admitted from traffic file
-			this->stats->log_rcv(PT_ADMIT);
 			// Check if header is delay type
 			if (header.timeout > 0) {
 				this->start_traffic_delay(header.timeout);
@@ -532,7 +525,6 @@ void Switch::handle_header(Header &header) {
 				break;
 			}
 		}
-
 		if (match_idx < 0) { match_idx = this->query_cont(header); }
 		this->execute_rule(header, match_idx);
 	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_HANDLE_HEADER_FUNC, e.get_traceback(), e.get_error_code()); }
@@ -566,8 +558,7 @@ int Switch::query_cont(Header& header) {
 		while (1) {
 			this->poll_ports();
 			if (this->client->is_pkt_from_server()) {
-				std::cout << "Controller sent a rule?\n";
-				this->client->rcv_pkt(add_pkt);
+				this->rcv_pkt(add_pkt, CONT_PORT);
 				new_rule = new Rule(add_pkt.msg);
 				this->flow_table.push_back(new_rule);
 				return (this->flow_table.size() - 1);
@@ -604,6 +595,9 @@ void Switch::execute_rule(Header& header, int rule_idx) {
 			header.serialize(ser_header);
 			relay_pkt.msg = ser_header;
 			this->send_pkt(relay_pkt, rule->act_val);
+		} else {
+			// Log admitted header
+			this->stats->log_rcv(PT_ADMIT);
 		}
 		// Increment packet count of rule
 		this->flow_table[rule_idx]->pkt_count++;
@@ -686,6 +680,14 @@ void Switch::stop() {
 	this->client->close_client();
 	fclose(this->tfile);
 	// TODO: Close fifo fds and tfile
+	if (this->swj_id > 0) {
+		close(this->swj_wr_fifo);
+		close(this->port_pfds[0].fd);		
+	}
+	if (this->swk_id > 0) {
+		close(this->swk_wr_fifo);
+		close(this->port_pfds[0].fd);
+	}
 }
 
 /**
@@ -706,7 +708,6 @@ void Switch::run() {
 
 	try {
 		// Send OPEN packet, then wait for ACK packet
-		//std::cout << "Attempt start...\n";
 		this->start();
 
 		// Prepare for polling stdin
@@ -738,11 +739,11 @@ void Switch::run() {
 			
 			// Poll adjacent switches
 			this->poll_ports();
-			if (this->port_pfds[SWJ_PORT].revents & POLLIN) {
-				std::cout << "data from swj?\n";
+			if (this->port_pfds[0].revents & POLLIN) {
+				this->port_pfds[0].revents = 0;
 				this->rcv_pkt(pkt, SWJ_PORT);
-			} else if (this->port_pfds[SWK_PORT].revents & POLLIN) {
-				std::cout << "data from swk?\n";
+			} else if (this->port_pfds[1].revents & POLLIN) {
+				this->port_pfds[1].revents = 0;
 				this->rcv_pkt(pkt, SWK_PORT);
 			}
 			
@@ -752,40 +753,3 @@ void Switch::run() {
 	this->stop();
 	std::cout << "\n" << SW_EXIT_MSG << "\n";
 }
-
-/**
-void Switch::run() {
-	int in_fifo, out_fifo, kg = 0;
-	std::string ser_sw (""), fifo_name (""), ser_pkt ("");
-	Packet *out_pkt = NULL, *in_pkt = NULL;
-	struct pollfd fds[1], wr_fd;
-
-	get_fifo_name(fifo_name, this->swk_id, this->id);
-	std::cout << "got out fifo name as" << fifo_name << "\n";
-	in_fifo = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
-	std::cout << "opened read fifo\n";
-
-	get_fifo_name(fifo_name, this->id, this->swk_id);
-	out_fifo = open(fifo_name.c_str(), O_WRONLY);
-	std::cout << "opended write fifo as" << fifo_name << "\n";
-
-	fds[0].fd = in_fifo;
-	fds[0].events = POLLIN;
-
-	this->serialize(ser_sw);
-	out_pkt = new Packet(PT_OPEN, ser_sw);
-	out_pkt->write_to_fifo(out_fifo);
-
-	while (kg == 0) {
-		if (poll(fds, 1, 0) == -1) {std::cout << "poll error\n";}
-		if (fds[0].revents & POLLIN) { kg = 1; }
-	}
-
-	in_pkt = new Packet();
-	in_pkt->read_from_fifo(in_fifo);
-	in_pkt->serialize(ser_pkt);
-	std::cout << "Received packet: " << ser_pkt;
-
-	delete in_pkt;
-}
-*/

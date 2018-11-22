@@ -89,7 +89,6 @@ void Controller::init_switches() {
 			next_ready_sw = this->server->get_next_ready_cl();
 
 			if (next_ready_sw >= 0 && this->running_sw[next_ready_sw] == NULL) {
-				//std::cout << "Sw" << next_ready_sw << " is ready\n";
 				this->rcv_pkt(next_ready_sw);		
 			}
 		}
@@ -118,7 +117,6 @@ void Controller::rcv_pkt(int sw_idx) {
 		try {
 			// Send Packet through server
 			this->server->rcv_pkt(pkt, sw_idx);
-			//std::cout << "Packet rec from sw\n";
 
 			// Handle packet.
 			if (pkt.ptype == PT_OPEN) {
@@ -130,10 +128,8 @@ void Controller::rcv_pkt(int sw_idx) {
 			}
 
 			// Print receieved packet and log its type.
-			//std::cout << "Just before log step\n";
 			this->stats->log_rcv(pkt.ptype);
 			this->print_log(pkt, sw_idx, LOG_RCV_MODE);
-			//std::cout << "log ok\n";
 			return;
 		} catch (CS_Skt_Exception& e) {
 			// Check if Switch closed unexpectedly
@@ -218,7 +214,6 @@ void Controller::print_log(Packet& pkt, int sw_idx, LogMode mode) {
 	Header rcv_header;
 	Rule * send_rule = NULL;
 	
-	std::cout << "\n";
 	// Get Switch ID
 	sw_id = this->running_sw[sw_idx]->id;
 
@@ -256,7 +251,7 @@ void Controller::print_log(Packet& pkt, int sw_idx, LogMode mode) {
 		case PT_ADMIT:
 			break;
 	}
-
+	std::cout << "\n";
 }
 
 /**
@@ -277,17 +272,11 @@ void Controller::print_log(Packet& pkt, int sw_idx, LogMode mode) {
 void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
 	Packet ack_pkt(PT_ACK);
 	Switch * new_sw = NULL;
-	//std::cout << "in open new sw\n";
 	try {
 		new_sw = new Switch(open_pkt.msg);
-		//std::cout << "sw created from pkt\n";
 		this->running_sw[sw_idx] = new_sw;
-		//std::cout << "sw added to vector\n";
 		this->send_pkt(ack_pkt, sw_idx);
-		//std::cout << "sent act pkt\n";
 		this->running_sw_count++;
-		//std::cout << "Print new sw\n";
-		//this->running_sw[sw_idx]->print();
 	} catch (Sw_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback(), e.get_error_code());
 	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback(), e.get_error_code()); }
 }
@@ -328,14 +317,10 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	header = Header(que_pkt.msg);
 
 	// Find Switch with IP range that contains Header's dest IP
-	std::cout << "creating rule for this header...\n";
-	header.print();
-	std::cout << "header has destip=" << header.dest_ip << "\n";
 	for (int i = 0; i < nswitch; i++) {
 		if (i == sw_idx) { continue; }
 		sw = this->running_sw[i];
 		if (sw->ip_range.is_in_range(header.dest_ip)) {
-			std::cout << "target sw for this header is: " << sw->id << "\n";
 			dest_sw = sw->id;
 			//dest_sw_idx = i;
 			break;
@@ -352,11 +337,9 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	// Since Switches are arranged in increasing order, the correct port
 	// to forward to is determined by comparing Switch IDs.
 	else {
-		std::cout << "this rule is to forward\n";
 		act_type = AT_FORWARD;
 		if (dest_sw > sw_id) { act_val = SWK_PORT; }
 		else { act_val = SWJ_PORT; }
-		std::cout << "act_val is: " << act_val << "\n";
 		// Set destination IP range to Switch's IP range.
 		dest_ip = IP_Range(sw->ip_range.low, sw->ip_range.high);
 	}
@@ -367,7 +350,6 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	// Create and send new Rule to Switch.
 	rule = new Rule(src_ip, dest_ip, act_type, act_val, MIN_PRI);
 	rule->serialize(ser_rule);
-	std::cout << "ser rule is: " << ser_rule << "\n";
 	add_pkt.ptype = PT_ADD;
 	add_pkt.msg = ser_rule;
 	try {
