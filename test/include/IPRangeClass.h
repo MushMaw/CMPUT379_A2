@@ -15,10 +15,10 @@
 
 class IP_Range_Exception :  public Traceback_Exception {
 	public:
-		IP_Range_Exception(const char* msg, const std::string cur_func, const std::string func_traceback) 
-		: Traceback_Exception(msg, cur_func, func_traceback) {}
-		IP_Range_Exception(const char* msg, const std::string cur_func)
-		: Traceback_Exception(msg, cur_func) {}
+		IP_Range_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code) 
+		: Traceback_Exception(msg, cur_func, func_traceback, error_code) {}
+		IP_Range_Exception(const char* msg, const std::string cur_func, int error_code)
+		: Traceback_Exception(msg, cur_func, error_code) {}
 };
 
 class IP_Range {

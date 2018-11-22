@@ -33,10 +33,10 @@
 
 class Parse_Exception : public Traceback_Exception {
 	public:
-		Parse_Exception(const char* msg, const std::string cur_func, const std::string func_traceback) 
-		: Traceback_Exception(msg, cur_func, func_traceback) {}
-		Parse_Exception(const char* msg, const std::string cur_func)
-		: Traceback_Exception(msg, cur_func) {}
+		Parse_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code) 
+		: Traceback_Exception(msg, cur_func, func_traceback, error_code) {}
+		Parse_Exception(const char* msg, const std::string cur_func, int error_code)
+		: Traceback_Exception(msg, cur_func, error_code) {}
 };
 
 int get_sw_val(std::string const& sw_str);

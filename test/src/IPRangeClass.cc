@@ -73,7 +73,7 @@ void IP_Range::deserialize(std::string& ser_ip) {
 	int delim_idx;
 	std::string ip_val_str("");
 
-	if ((delim_idx = ser_ip.find("-")) == -1) { throw IP_Range_Exception(ERR_IP_RANGE_FORMAT, ERR_IP_RANGE_DESERIALIZE_FUNC); }
+	if ((delim_idx = ser_ip.find("-")) == -1) { throw IP_Range_Exception(ERR_IP_RANGE_FORMAT, ERR_IP_RANGE_DESERIALIZE_FUNC, 0); }
 	std::cout << "dash found\n";
 
 	try {
@@ -81,5 +81,5 @@ void IP_Range::deserialize(std::string& ser_ip) {
 		this->low = str_to_int(ip_val_str);
 		ip_val_str = ser_ip.substr((delim_idx + 1), ser_ip.length());
 		this->high = str_to_int(ip_val_str);
-	} catch (Parse_Exception& e) { throw IP_Range_Exception(ERR_IP_RANGE_FORMAT, ERR_IP_RANGE_DESERIALIZE_FUNC); }
+	} catch (Parse_Exception& e) { throw IP_Range_Exception(e.what(), ERR_IP_RANGE_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
 }

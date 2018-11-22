@@ -32,8 +32,17 @@ void Header::deserialize(std::string& ser_header) {
 
 	try {
 		this->sw = get_sw_val(toks.at(0));
-		this->src_ip = str_to_pos_int(toks.at(1));
-		this->dest_ip = str_to_pos_int(toks.at(2));
+		// If Header specifies a delay
+		if (toks.at(1) == HEADER_DELAY_TYPE) {
+			this->timeout = str_to_int(toks.at(1));
+			this->src_ip = -1;
+			this->det_ip = -1;
+		// Else, Header specifies a source and destination IP
+		} else {
+			this->src_ip = str_to_int(toks.at(1));
+			this->dest_ip = str_to_int(toks.at(2));
+			this->timeout = -1;
+		}
 	} catch (Parse_Exception& e) { throw Header_Exception(e.what()); }
 }
 

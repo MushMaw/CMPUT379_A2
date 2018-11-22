@@ -29,16 +29,20 @@ enum SwPort {CONT_PORT, SWJ_PORT, SWK_PORT, IP_PORT};
 
 class Traceback_Exception : public std::runtime_error {
 	std::string traceback;
+	int error_code;
 	public:
-		Traceback_Exception(const char* msg, const std::string cur_func, const std::string func_traceback) : std::runtime_error(msg) {
+		Traceback_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code) : std::runtime_error(msg) {
 			this->traceback = "";
 			this->traceback += cur_func;
 			this->traceback += TB_EXC_TRACEBACK_DELIM;
 			this->traceback += func_traceback;
+			this->error_code = error_code;
 		}
-		Traceback_Exception(const char* msg, const std::string cur_func) : std::runtime_error(msg) {
+		Traceback_Exception(const char* msg, const std::string cur_func, int error_code) : std::runtime_error(msg) {
 			this->traceback = "";
 			this->traceback += cur_func;
+			std::cout << "setting error code to: " << error_code << "\n";
+			this->error_code = error_code;
 		}
 		void print_traceback() { 
 			std::cerr << TB_EXC_PRINT_START;
@@ -46,6 +50,7 @@ class Traceback_Exception : public std::runtime_error {
 			std::cerr << TB_EXC_ERROR_MSG << this->what(); 
 		}
 		std::string get_traceback() { return this->traceback; }
+		int get_error_code() { return this->error_code; }
 		
 };
 

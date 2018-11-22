@@ -36,17 +36,19 @@ void Rule::deserialize(std::string& ser_rule) {
 	int count;
 
 	count = tok_split(ser_rule, RULE_DELIM, toks_ptr);
-	if (count != 7) { throw Rule_Exception(ERR_RULE_SER_FORMAT, ERR_RULE_DESERIALIZE_FUNC); }
+	if (count != 7) { throw Rule_Exception(ERR_RULE_SER_FORMAT, ERR_RULE_DESERIALIZE_FUNC, 0); }
 
-	this->src_ip.low = std::stoi(toks.at(0));
-	this->src_ip.high = std::stoi(toks.at(1));
+	try {
+	this->src_ip.low = str_to_int(toks.at(0));
+	this->src_ip.high = str_to_int(toks.at(1));
 
-	this->dest_ip.low = std::stoi(toks.at(2));
-	this->dest_ip.high = std::stoi(toks.at(3));
+	this->dest_ip.low = str_to_int(toks.at(2));
+	this->dest_ip.high = str_to_int(toks.at(3));
 
-	this->act_type = static_cast<ActType>(std::stoi(toks.at(4)));
-	this->pri = std::stoi(toks.at(5));
-	this->pkt_count = std::stoi(toks.at(6));
+	this->act_type = static_cast<ActType>(str_to_int(toks.at(4)));
+	this->pri = str_to_int(toks.at(5));
+	this->pkt_count = str_to_int(toks.at(6));
+	} catch (Parse_Exception& e) { throw Rule_Exception(e.what(), ERR_RULE_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -121,6 +123,8 @@ void Rule::print() {
 
 	std::cout << "(";
 	// Print source and destination IP ranges
+	this->src_ip.serialize(src_ip_str);
+	this->dest_ip.serialize(dest_ip_str);
 	fprintf(stdout, RULE_PRINT_IP_RANGES, src_ip_str.c_str(), dest_ip_str.c_str());
 	// Print action type with port number for FORWARD types
 	if (this->act_type == AT_FORWARD) {

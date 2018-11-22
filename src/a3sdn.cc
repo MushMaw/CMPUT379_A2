@@ -34,13 +34,15 @@ int main(int argc, char *argv[]) {
 		std::cout << "Running controller...\n";
 		try {
 			new_cont = new Controller(argc, argv);
-			new_cont.run();
+			new_cont->run();
+			delete [] new_cont;
 		} catch (Cont_Exception& e) { std::cout << e.what(); }
 	} else if (mode_arg.substr(0,2) == SW_MODE) {
 		std::cout << "Running switch...\n";
 		try {
 			new_sw = new Switch(argc, argv);
 			new_sw->run();
+			delete [] new_sw;
 		} catch (Sw_Exception& e) { std::cout << e.what(); }
 		delete new_sw;
 	} else {

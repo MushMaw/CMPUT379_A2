@@ -8,5 +8,8 @@
 #include "TimerClass.h"
 #include "HeaderClass.h"
 #include "PktStatsClass.h"
+#include "PktClass.h"
+#include "CS_SocketClass.h"
+#include "RuleClass.h"
 
 #endif

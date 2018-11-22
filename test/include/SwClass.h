@@ -47,6 +47,7 @@
 #define ERR_SW_START_FUNC std::string("Switch::start()")
 #define ERR_SW_QUERY_CONT_FUNC std::string("Switch::query_cont()")
 #define ERR_SW_EXECUTE_RULE_FUNC std::string("Switch::execute_rule()")
+#define ERR_SW_RUN_FUNC std::string("Switch::run()")
 
 #define ERR_INVALID_SW_CMD " is not a valid command\n"
 #define ERR_TFILE_NOT_FOUND "trafficfile not found\n"
@@ -57,10 +58,10 @@
 
 class Sw_Exception : public Traceback_Exception {
 	public:
-		Sw_Exception(const char* msg, const std::string cur_func, const std::string func_traceback) 
-		: Traceback_Exception(msg, cur_func, func_traceback) {}
-		Sw_Exception(const char* msg, const std::string cur_func)
-		: Traceback_Exception(msg, cur_func) {}
+		Sw_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code) 
+		: Traceback_Exception(msg, cur_func, func_traceback, error_code) {}
+		Sw_Exception(const char* msg, const std::string cur_func, int error_code)
+		: Traceback_Exception(msg, cur_func, error_code) {}
 };
 
 class Switch {

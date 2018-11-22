@@ -8,6 +8,6 @@ class IP_Range {
 		IP_Range();
 		IP_Range(int low, int high);
 		bool is_in_range(int ip_val);
-}
+};
 
 #endif

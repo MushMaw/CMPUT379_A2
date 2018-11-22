@@ -299,7 +299,7 @@ void Controller::list() {
  * Throws: None
  */
 void Controller:stop() {
-	
+	return;
 }
 
 /**
@@ -352,4 +352,5 @@ void Controller::run() {
 	  catch (Cont_Exception& e) { throw; }
 
 	// TODO: Clean up controller stuff if necessary
+	this->stop();
 }

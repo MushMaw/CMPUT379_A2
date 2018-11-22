@@ -35,8 +35,8 @@ Switch::Switch(int argc, char *argv[]){
 	std::string address_str, portnum_str;
 	int portnum;
 
-	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT, ERR_SW_CONSTR_FUNC);}
-	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND, ERR_SW_CONSTR_FUNC);}
+	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT, ERR_SW_CONSTR_FUNC, 0);}
+	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND, ERR_SW_CONSTR_FUNC, 0);}
 	this->tfile.open(argv[2]);
 
 	// Convert char arguments to string objects
@@ -63,9 +63,9 @@ Switch::Switch(int argc, char *argv[]){
 		this->timer = new Timer();
 		this->stats = new SwStats();
 
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback()); }
-	  catch (Parse_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback()); }
-	  catch (IP_Range_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback()); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Parse_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (IP_Range_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -84,7 +84,7 @@ void Switch::deserialize(std::string& ser_sw) {
 	int tok_count;
 
 	tok_count = tok_split(ser_sw, SW_DELIM, toks);
-	if (tok_count != 4) { throw Sw_Exception(ERR_SW_SER_FORMAT, ERR_SW_DESERIALIZE_FUNC); }
+	if (tok_count != 4) { throw Sw_Exception(ERR_SW_SER_FORMAT, ERR_SW_DESERIALIZE_FUNC, 0); }
 
 	try {
 		this->id = str_to_int(toks.at(0));
@@ -95,7 +95,7 @@ void Switch::deserialize(std::string& ser_sw) {
 		else { this->swk_id = str_to_int(toks.at(2)); }
 
 		this->ip_range = IP_Range(toks.at(3));
-	} catch (Parse_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_DESERIALIZE_FUNC, e.get_traceback()); }
+	} catch (Parse_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -139,10 +139,10 @@ void Switch::serialize(std::string& ser_sw) {
  */
 void Switch::poll_ports() {
 	struct pollfd * port_pfds_ptr = &(this->port_pfds[0]);
-	if (poll(port_pfds_ptr, this->port_pfds.size(), 0) < 0) { throw Sw_Exception(ERR_SW_POLL_FAIL, ERR_SW_POLL_PORTS_FUNC); }
+	if (poll(port_pfds_ptr, this->port_pfds.size(), 0) < 0) { throw Sw_Exception(ERR_SW_POLL_FAIL, ERR_SW_POLL_PORTS_FUNC, 0); }
 	try {
 		this->client->poll_server();
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(ERR_SW_POLL_FAIL, ERR_SW_POLL_PORTS_FUNC); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_POLL_PORTS_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -189,8 +189,8 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 			default:
 				return;
 		}
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_SEND_PKT_FUNC, e.get_traceback()); }
-	catch (Pkt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_SEND_PKT_FUNC, e.get_traceback()); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_SEND_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
+	catch (Pkt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_SEND_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	// Print log of sent packet and record sent packet type in stats
 	this->stats->log_send(pkt.ptype);
@@ -227,8 +227,8 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 			default:
 				return;
 		}
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RCV_PKT_FUNC, e.get_traceback()); }
-	catch (Pkt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RCV_PKT_FUNC, e.get_traceback()); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
+	catch (Pkt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	// Print log of received packet and record newly-received packet type in stats
 	this->stats->log_rcv(pkt.ptype);
@@ -281,8 +281,8 @@ void Switch::start() {
 				if (ack_pkt.ptype == PT_ACK) { break; }
 			}	
 		}
-	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback()); }
-	  catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback()); }
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_START_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -406,7 +406,7 @@ int Switch::query_cont(Header& header) {
 				return this->flow_table.size();
 			}
 		}
-	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_QUERY_CONT_FUNC, e.get_traceback()); }
+	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_QUERY_CONT_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -436,7 +436,7 @@ void Switch::execute_rule(Header& header, int rule_idx) {
 		
 		// Increment packet count of rule
 		this->flow_table[rule_idx]->pkt_count++;
-	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_EXECUTE_RULE_FUNC, e.get_traceback()); }
+	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_EXECUTE_RULE_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -505,40 +505,42 @@ void Switch::run() {
 	Packet pkt;
 	struct pollfd stdin_pfd[1];
 
-	// Send OPEN packet, then wait for ACK packet
-	this->start();
+	try {
+		// Send OPEN packet, then wait for ACK packet
+		this->start();
 
-	// Prepare for polling stdin
-	stdin_pfd[0].fd = STDIN_FILENO;
-	stdin_pfd[0].events = POLLIN;
-	stdin_pfd[0].revents = 0;
+		// Prepare for polling stdin
+		stdin_pfd[0].fd = STDIN_FILENO;
+		stdin_pfd[0].events = POLLIN;
+		stdin_pfd[0].revents = 0;
 
-	while (1) {
-		// Handle next line (if any) from traffic file
-		// Check if switch is currently delayed before reading
-		if (this->timer->at_target_duration() == true) {
-			this->read_next_traffic_line();
+		while (1) {
+			// Handle next line (if any) from traffic file
+			// Check if switch is currently delayed before reading
+			if (this->timer->at_target_duration() == true) {
+				this->read_next_traffic_line();
+			}
+
+			// Poll stdin for user command
+			poll(stdin_pfd, 1, 0);
+			if (stdin_pfd[0].revents & POLLIN) {
+				this->handle_user_cmd();
+			}
+
+			// If user entered "exit" command, exit run loop
+			if (this->keep_running == false) {
+				break;
+			}
+
+			// Poll adjacent switches
+			this->poll_ports();
+			if (this->port_pfds[SWJ_PORT].revents & POLLIN) {
+				this->rcv_pkt(pkt, SWJ_PORT);
+			} else if (this->port_pfds[SWK_PORT].revents & POLLIN) {
+				this->rcv_pkt(pkt, SWK_PORT);
+			}
 		}
-
-		// Poll stdin for user command
-		poll(stdin_pfd, 1, 0);
-		if (stdin_pfd[0].revents & POLLIN) {
-			this->handle_user_cmd();
-		}
-
-		// If user entered "exit" command, exit run loop
-		if (this->keep_running == false) {
-			break;
-		}
-
-		// Poll adjacent switches
-		this->poll_ports();
-		if (this->port_pfds[SWJ_PORT].revents & POLLIN) {
-			this->rcv_pkt(pkt, SWJ_PORT);
-		} else if (this->port_pfds[SWK_PORT].revents & POLLIN) {
-			this->rcv_pkt(pkt, SWK_PORT);
-		}
-	}
+	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**

@@ -15,6 +15,7 @@
 
 #include "PktClass.h"
 
+#define PKTSTATS_PRINT_TITLE "Packet Stats:\n"
 #define PKTSTATS_PRINT_RCV "Received: "
 #define PKTSTATS_PRINT_SEND "Transmitted: "
 

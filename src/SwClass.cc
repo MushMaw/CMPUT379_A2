@@ -18,24 +18,28 @@ Switch::Switch(std::string& ser_sw) {
 }
 
 /**
- * Function: 
+ * Function: Switch Constructor
  * -----------------------
- * Ser
+ * Initializes Switch from command line arguments.
  *
  * Parameters:
- * 	- ser
+ * 	- argc: Number of arguments.
+ *	- argv: Array of arguments.
  * Return Value: None
- * Throws: None
+ * Throws: 
+ *	- Sw_Exception
  */
 Switch::Switch(int argc, char *argv[]){
 	struct stat buffer;
 	std::string id_str, swj_id_str, swk_id_str, ip_range_str;
 	std::string address_str, portnum_str;
+	int portnum;
 
 	if (argc != 8) {throw Sw_Exception(ERR_SW_CL_FORMAT);}
 	if (stat(argv[2], &buffer) == -1) {throw Sw_Exception(ERR_TFILE_NOT_FOUND);}
 	this->tfile = std::open(argv[2]);
 
+	// Convert char arguments to string objects
 	tfile_name = argv[2];
 	id_str = argv[1]; swj_id_str = argv[3]; swk_id_str = argv[4];
 	ip_range_str = argv[5];
@@ -43,37 +47,37 @@ Switch::Switch(int argc, char *argv[]){
 	portnum_str = argv[7];
 
 	try {	
-		if ((id = get_sw_val(id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
+		id = get_sw_val(id_str);
 
 		if (swj_id_str == NULL_PORT) { swj_id = 0; }
-		else if ((swj_id = get_sw_val(swj_id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
+		else { swj_id = get_sw_val(swj_id_str); }
 	
 		if (swk_id_str == NULL_PORT) { swk_id = 0; }
-		else if ((swk_id = get_sw_val(swk_id_str)) == -1) {throw Sw_Exception(ERR_SW_VAL);}
+		else { swk_id = get_sw_val(swk_id_str); }
 
-		ip_range = get_ip_range(ip_range_str);
-		if (ip_range.low == -1 || ip_range.high == -1 || ip_range.low >= ip_range.high) {
-			throw Sw_Exception(ERR_IP_RANGE_INVALID);
-		}
+		ip_range = IP_Range(ip_range_str);
 		
 		this->keep_running = true;
+		portnum = str_to_int(port_num_str);
 		this->client = new Sw_Client(address_str, portnum);
 		this->timer = new Timer();
 		this->stats = new PktStats();
 
 	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what()); }
-	catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
+	  catch (Parse_Exception& e) { throw Sw_Exception(e.what()); }
+	  catch (IP_Range_Exception& e) { throw Sw_Exception(e.what()); }
 }
 
 /**
- * Function: 
+ * Function: deserialize
  * -----------------------
- * Ser
+ * Sets Switch attributes to those specified in serialized Switch string.
  *
  * Parameters:
- * 	- ser
+ * 	- ser_sw: Serialized Switch.
  * Return Value: None
- * Throws: None
+ * Throws: 
+ *	- Sw_Exception
  */
 void Switch::deserialize(std::string& ser_sw) {
 	std::vector<std::string> toks;
@@ -82,30 +86,31 @@ void Switch::deserialize(std::string& ser_sw) {
 	tok_count = tok_split(ser_sw, SW_DELIM, toks);
 
 	try {
-		this->id = str_to_pos_int(toks.at(0));
+		this->id = str_to_int(toks.at(0));
 
-		std::cout << "0:"<<toks.at(0) << "|1:"<<toks.at(1)<<"|2:" << toks.at(2)<<"|3:" << toks.at(3) << "\n";
-		if (toks.at(1) == NULL_PORT) { this->swj_id = 0; }
-		else { this->swj_id = str_to_pos_int(toks.at(1)); }
-		if (toks.at(2) == NULL_PORT) { this->swk_id = 0; }
-		else { this->swk_id = str_to_pos_int(toks.at(2)); }
+		if (toks.at(1) == NULL_PORT) { this->swj_id = -1; }
+		else { this->swj_id = str_to_int(toks.at(1)); }
+		if (toks.at(2) == NULL_PORT) { this->swk_id = -1; }
+		else { this->swk_id = str_to_int(toks.at(2)); }
 
-		this->ip_range = get_ip_range(toks.at(3));
+		this->ip_range = IP_Range(toks.at(3));
 	} catch (ParseException& e) { throw Sw_Exception(e.what()); }
 }
 
 /**
- * Function: 
+ * Function: serialize
  * -----------------------
- * Ser
+ * Serializes Switch object as string.
  *
  * Parameters:
- * 	- ser
+ * 	- ser_sw: Stores serialized Switch.
  * Return Value: None
  * Throws: None
  */
 void Switch::serialize(std::string& ser_sw) {
 	std::string ser_ip_range;
+
+	ser_sw.clear();
 
 	ser_sw += std::to_string(this->id);
 	ser_sw += SW_DELIM;
@@ -123,62 +128,50 @@ void Switch::serialize(std::string& ser_sw) {
 }
 
 /**
- * Function: 
+ * Function: poll_ports
  * -----------------------
- * Ser
+ * Poll Controller and adjacent Switches (if any) for incoming data.
  *
- * Parameters:
- * 	- ser
- * Return Value: None
- * Throws: None
- */
-void Switch::print() {
-	std::string ser_IP;
-
-	serialize_IP_range(ser_IP, this->IP_range);
-	fprintf(stdout, SW_PRINT_INFO, this->swi, this->swj, this->swk, ser_IP);
-}
-
-/**
- * Function: 
- * -----------------------
- * Ser
- *
- * Parameters:
- * 	- ser
+ * Parameters: None
  * Return Value: None
  * Throws: None
  */
 void Switch::poll_ports() {
 	struct pollfd * port_pfds_ptr = &(this->port_pfds[0]);
-	poll(port_pfds_ptr, SWPORT_COUNT, 0);
+	if (poll(port_pfds_ptr, SWPORT_COUNT, 0) < 0) { throw Sw_Exception(ERR_SW_POLL_FAIL); }
+	try {
+		this->client->poll_server();
+	} catch (CS_SktException& e) { throw Sw_Exception(ERR_SW_POLL_FAIL); }
 }
 
 /**
- * Function: 
+ * Function: print
  * -----------------------
- * Ser
+ * Prints Switch attributes as formatted message to stdout.
  *
- * Parameters:
- * 	- ser
+ * Parameters: None
  * Return Value: None
  * Throws: None
  */
 void Switch::print() {
 	std::string ip_range_str;
-	serialize_ip_range(ip_range_str, this->ip_range)
+	this->ip_range.serialize(ip_range_str);
 	fprintf(stdout, SW_PRINT_MSG, this->id, this->swj, this->swk, ip_range_str.c_str());
 }
 
 /**
- * Function: 
+ * Function: send_pkt
  * -----------------------
- * Ser
+ * Sends Packet "pkt" to specified "port".
+ * A message containing the Packet type and fields is printed to stdout, and the
+ * Packet type is logged.
  *
  * Parameters:
- * 	- ser
+ * 	- pkt: Packet to send.
+ *	- port: Port to send to (0:Controller, 1:Switch J, 2:Switch K)
  * Return Value: None
- * Throws: None
+ * Throws: 
+ *	- Sw_Exception
  */
 void Switch::send_pkt(Packet &pkt, SwPort port) {
 	try {
@@ -197,6 +190,7 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 	} catch (CS_Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 	catch (Pkt_Exception& e) { throw Sw_Exception(e.what()); }
 
+	// Print log of sent packet and record sent packet type in stats
 	this->stats->log_send(pkt);
 	this->print_log(pkt, port, PKT_LOG_RCV_MODE);
 }
@@ -204,10 +198,13 @@ void Switch::send_pkt(Packet &pkt, SwPort port) {
 /**
  * Function: 
  * -----------------------
- * Ser
+ * Receieves Packet "pkt" from specified port.
+ * This method assumes there is data to be receieved, so the "poll_ports"
+ * method should be called first to avoid blocking I/O.
  *
  * Parameters:
- * 	- ser
+ * 	- pkt: Stores the receieved Packet.
+ *	- port: Port to receive from (0:Controller, 1:Switch J, 2:Switch K)
  * Return Value: None
  * Throws: None
  */
@@ -236,14 +233,15 @@ void Switch::rcv_pkt(Packet &pkt, SwPort port) {
 }
 
 /**
- * Function: 
+ * Function: start
  * -----------------------
- * Ser
+ * Sends an OPEN Packet containing the Switch's info to the Controller, then
+ * waits for an ACK Packet from the Controller.
  *
- * Parameters:
- * 	- ser
+ * Parameters: None
  * Return Value: None
- * Throws: None
+ * Throws: 
+ *	- Sw_Exception
  */
 void Switch::start() {
 	Packet open_pkt, ack_pkt;
@@ -253,23 +251,26 @@ void Switch::start() {
 	open_pkt.ptype = PT_OPEN;
 	open_pkt.set_msg(ser_sw);
 
-	this->send_pkt(open_pkt, CONT_PORT);
-	while (1) {
-		this->poll_ports;
-		if (this->port_pfds[CONT_PORT].revents & POLLIN) {
-			this->client->rcv_pkt(ack_pkt)
-			if (ack_pkt.ptype == PT_ACK) { break; }
-		}	
-	}
+	try {
+		this->send_pkt(open_pkt, CONT_PORT);
+		while (1) {
+			this->poll_ports;
+			if (this->port_pfds[CONT_PORT].revents & POLLIN) {
+				this->client->rcv_pkt(ack_pkt)
+				if (ack_pkt.ptype == PT_ACK) { break; }
+			}	
+		}
+	} catch (CS_Skt_Exception& e) { throw Sw_Exception(e.what()); }
+	  catch (Sw_Exception& e) { throw; }
 }
 
 /**
- * Function: 
+ * Function: list
  * -----------------------
- * Ser
+ * Prints information of all running Switches, then prints stats for
+ * received/sent Packets.
  *
- * Parameters:
- * 	- ser
+ * Parameters: None
  * Return Value: None
  * Throws: None
  */
@@ -288,12 +289,17 @@ void Switch::list() {
 }
 
 /**
- * Function: 
+ * Function: read_next_traffic_line
  * -----------------------
- * Ser
+ * Reads and handles next line from traffic file, if available.
+ * If EOF has been reached or the line is either empty or a comment
+ * line (i.e. starts with '#'), the method terminates.
+ * If the line is a header whose Switch ID matches that of the this 
+ * Switch, the header is either compared against the flow table using
+ * the "handle_header" method or - if the header specifies a delay - 
+ * the Switch starts a timer delay.
  *
- * Parameters:
- * 	- ser
+ * Parameters: None
  * Return Value: None
  * Throws: None
  */
@@ -303,6 +309,7 @@ void Switch::read_next_traffic_line() {
 
 	// Check if end of traffic file has been reached.
 	if (this->tflie.eof()) { return; }
+
 	// If next line is empty or is a comment (starts with '#'), do nothing.
 	c = this->tfile.peak();
 	std::getline(line, this->tfile);
@@ -320,12 +327,15 @@ void Switch::read_next_traffic_line() {
 }
 
 /**
- * Function: 
+ * Function: handle_header
  * -----------------------
- * Ser
+ * Attempts to match header to some Rule in flow table.
+ * If a matching Rule exists, execute it on the Header.
+ * Otherwise, query the Controller for a new Rule and execute
+ * the received Rule.
  *
  * Parameters:
- * 	- ser
+ * 	- header: The Header to be matched to a Rule.
  * Return Value: None
  * Throws: None
  */
@@ -345,9 +355,9 @@ void Switch::handle_header(Header &header) {
 }
 
 /**
- * Function: 
+ * Function: query_cont
  * -----------------------
- * Ser
+ * 
  *
  * Parameters:
  * 	- ser

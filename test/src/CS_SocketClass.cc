@@ -37,7 +37,7 @@ Cont_Server::Cont_Server(int port_num, int num_clients) {
 	// Create master socket
 	this->serv_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->serv_sock < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_CONT_SERVER_CONSTR_FUNC);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_CONT_SERVER_CONSTR_FUNC, 0);
 	}
 
 	// Prepare for polling incoming client connections
@@ -51,7 +51,7 @@ Cont_Server::Cont_Server(int port_num, int num_clients) {
 	server.sin_port = htons(port_num);
 
 	if (bind(this->serv_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_BIND, ERR_CONT_SERVER_CONSTR_FUNC);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_BIND, ERR_CONT_SERVER_CONSTR_FUNC, 0);
 	}
 
 	// Accepts connections from specified number of clients
@@ -75,13 +75,12 @@ void Cont_Server::accept_clients() {
 	socklen_t fromlen;
 
 	// Poll master socket until "num_clients" clients have connected
-	while(1) {
-		if (poll(server_pfd_ptr, 1, 0) < 0) { throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_ACC_CL_FUNC); }
+	while(n < num_clients) {
+		if (poll(server_pfd_ptr, 1, 0) < 0) { throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_ACC_CL_FUNC, 0); }
 		if ((n < num_clients) && (this->server_pfd[0].revents & POLLIN)) {
 			fromlen = sizeof(from);
-
 			new_cl_sock = accept(serv_sock, (struct sockaddr *) &from, &fromlen);
-			if (new_cl_sock < 0) { throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_ACCEPT, ERR_CONT_SERVER_ACC_CL_FUNC); }
+			if (new_cl_sock < 0) { throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_ACCEPT, ERR_CONT_SERVER_ACC_CL_FUNC, 0); }
 			this->cl_socks.push_back(new_cl_sock);
 
 			this->cl_pfds[n].fd = new_cl_sock;
@@ -104,7 +103,7 @@ void Cont_Server::accept_clients() {
 void Cont_Server::poll_clients() {
 	struct pollfd * cl_pfds_ptr = &(this->cl_pfds[0]);
 	if (poll(cl_pfds_ptr, this->num_clients, 0) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_POLL_CL_FUNC);
+		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_POLL_CL_FUNC, 0);
 	}
 }
 
@@ -122,7 +121,6 @@ void Cont_Server::poll_clients() {
  */
 bool Cont_Server::client_is_ready(int cl_idx) {
 	if (this->cl_pfds[cl_idx].revents & POLLIN) {
-		this->cl_pfds[cl_idx].revents = 0;
 		return true;
 	} else { return false; }
 }
@@ -167,7 +165,7 @@ size_t Cont_Server::send_pkt(Packet& pkt, int cl_idx) {
 	cl_fd = this->cl_socks[cl_idx];
 	try {
 		bytes_wrtn = pkt.write_to_fd(cl_fd);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_CONT_SERVER_SEND_PKT_FUNC, e.get_traceback()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_CONT_SERVER_SEND_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_wrtn;
 }
 
@@ -191,7 +189,7 @@ size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
 	cl_fd = this->cl_socks[cl_idx];
 	try {
 		bytes_read = pkt.read_from_fd(cl_fd);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_CONT_SERVER_RCV_PKT_FUNC, e.get_traceback()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_CONT_SERVER_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_read;
 }
 
@@ -210,23 +208,36 @@ size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
 Sw_Client::Sw_Client(std::string& address, int port_num) {
 	struct sockaddr_in server;
 	struct pollfd cont_pfd;
+	struct hostent *hp = NULL;
+	bool valid_addr = false;
 
 	this->port_num = port_num;
 	this->cl_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->cl_socket < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_SW_CLIENT_CONSTR_FUNC);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_SW_CLIENT_CONSTR_FUNC, 0);
 	}
 
-	memset(&server, 0, sizeof(server));
-	server.sin_family = AF_INET;
+	hp = gethostbyname(address.c_str());
+	if (hp == (struct hostent *) NULL) { std::cout << "Null hp\n"; exit(1); }
+
+	memset((char *) &server, 0, sizeof(server));
+	server.sin_family = hp->h_addrtype;
+	memcpy((char *) &server.sin_addr, hp->h_addr, hp->h_length);
 	server.sin_port = htons(port_num);
 
-	if (inet_pton(AF_INET, address.c_str(), &server.sin_addr) <= 0) {
+	/**
+	 Attempt conversion for dotted-decimal address
+	if (inet_pton(AF_INET, address.c_str(), &server.sin_addr) > 0) {
+		valid_addr = true;
 		throw CS_Skt_Exception(ERR_CS_SKT_BINARY_CONVERT_ADDR, ERR_SW_CLIENT_CONSTR_FUNC);
 	}
 
+	 If not dotted-decimal, attempt conversion for symbolic name
+	if ((server.inet_addr(
+	*/
+
 	if (connect(this->cl_socket, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CONNECT, ERR_SW_CLIENT_CONSTR_FUNC);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CONNECT, ERR_SW_CLIENT_CONSTR_FUNC, 0);
 	}
 
 	cont_pfd.fd = this->cl_socket;
@@ -251,7 +262,7 @@ size_t Sw_Client::rcv_pkt(Packet& pkt) {
 	size_t bytes_read;
 	try {
 		bytes_read = pkt.read_from_fd(this->cl_socket);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_RCV_PKT_FUNC, e.get_traceback()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_read;
 }
 
@@ -271,7 +282,7 @@ size_t Sw_Client::send_pkt(Packet& pkt) {
 	size_t bytes_wrtn;
 	try {
 		bytes_wrtn = pkt.write_to_fd(this->cl_socket);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_SEND_PKT_FUNC, e.get_traceback()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_SEND_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_wrtn;
 }
 
@@ -288,7 +299,7 @@ size_t Sw_Client::send_pkt(Packet& pkt) {
 void Sw_Client::poll_server() {
 	struct pollfd * pfd_ptr = &(this->pfd[0]);
 	if (poll(pfd_ptr, 1, 0) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_SW_CLIENT_POLL_SERV_FUNC);
+		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_SW_CLIENT_POLL_SERV_FUNC, 0);
 	}
 }
 

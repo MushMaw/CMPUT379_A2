@@ -18,7 +18,7 @@
 class CS_Skt_Exception: public std::runtime_error {
 	public:
 		CS_Skt_Exception(const char* message) : std::runtime_error(message){}
-}
+};
 
 class Cont_Server {
 	private:
@@ -30,14 +30,14 @@ class Cont_Server {
 		Cont_Server(int port_num, int num_clients);
 		void accept_clients();
 		
-}
+};
 
 class Sw_Client {
 	private:
 		int cl_socket, port_num;
 		std::vector<struct pollfd> pfd;
-	public
+	public:
 		Sw_Client(std::string& address, int port_num);
-}
+};
 
 #endif

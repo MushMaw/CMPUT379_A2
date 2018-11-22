@@ -36,7 +36,7 @@ void Header::deserialize(std::string& ser_header) {
 	int count;
 
 	count = tok_split(ser_header, HEADER_DELIM, toks_ptr);
-	if (count != 3) { throw Header_Exception(ERR_HEADER_INVALID_FORMAT, ERR_HEADER_DESERIALIZE_FUNC); }
+	if (count != 3) { throw Header_Exception(ERR_HEADER_INVALID_FORMAT, ERR_HEADER_DESERIALIZE_FUNC, 0); }
 
 	try {
 		this->swi = get_sw_val(toks.at(0));
@@ -51,7 +51,7 @@ void Header::deserialize(std::string& ser_header) {
 			this->dest_ip = str_to_int(toks.at(2));
 			this->timeout = -1;
 		}
-	} catch (Parse_Exception& e) { throw Header_Exception(e.what(), ERR_HEADER_DESERIALIZE_FUNC, e.get_traceback()); }
+	} catch (Parse_Exception& e) { throw Header_Exception(e.what(), ERR_HEADER_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 

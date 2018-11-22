@@ -7,6 +7,9 @@
 
 #include "PktClass.h"
 
+/**
+ * Packet Constructors
+ */
 Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 Packet::Packet() : ptype(PT_UNINIT), msg("") {};
 
@@ -46,7 +49,7 @@ void Packet::set_msg(std::string& new_msg) {
  */
 void Packet::deserialize(std::string& ser_pkt) {
 	std::string pkt_type_str (""), pkt_msg_str ("");
-	int type_end_idx, pkt_type;
+	int type_end_idx, pkt_type, null_idx;
 
 	try {
 		type_end_idx = ser_pkt.find(PKT_DELIM);
@@ -57,11 +60,13 @@ void Packet::deserialize(std::string& ser_pkt) {
 				this->ptype = static_cast<PktType>(pkt_type);
 			}
 		} else {
-			throw Pkt_Exception(ERR_PKT_SER_FORMAT, ERR_PKT_DESERIALIZE_FUNC);
+			throw Pkt_Exception(ERR_PKT_SER_FORMAT, ERR_PKT_DESERIALIZE_FUNC, 0);
 		}
-	} catch (Pkt_Exception& e) { throw; }
-	  catch (Parse_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_DESERIALIZE_FUNC, e.get_traceback()); }
-	pkt_msg_str = ser_pkt.substr(type_end_idx + 1, ser_pkt.length() - 2);
+	} catch (Pkt_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Parse_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
+	// Remove padding
+	null_idx = ser_pkt.find('\0');
+	pkt_msg_str = ser_pkt.substr(type_end_idx + 1, null_idx - 2);
 	this->msg = pkt_msg_str;
 }
 
@@ -110,9 +115,10 @@ size_t Packet::read_from_fd(int fd) {
 	while (total_read < PKT_LEN + 1) {
 		bytes_read = read(fd, buffer, PKT_LEN + 1);
 		if (bytes_read < 0) {
-			throw Pkt_Exception(ERR_PKT_READ, ERR_PKT_READ_FD_FUNC);
+			throw Pkt_Exception(ERR_PKT_READ, ERR_PKT_READ_FD_FUNC, 0);
+		// If read returns 0, throw error indicating closed fd
 		} else if (bytes_read == 0) {
-			break;
+			throw Pkt_Exception(ERR_PKT_READ_CLOSED_WRITE_END, ERR_PKT_READ_FD_FUNC, ERR_CODE_PKT_CLOSED_FD);
 		}
 		total_read += bytes_read;
 		// Save read bytes to string object.
@@ -124,7 +130,7 @@ size_t Packet::read_from_fd(int fd) {
 	// Try to deserialize read string
 	try {
 		this->deserialize(ser_pkt);
-	} catch (Pkt_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_READ_FD_FUNC, e.get_traceback()); }
+	} catch (Pkt_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_READ_FD_FUNC, e.get_traceback(), e.get_error_code()); }
 	return total_read;
 }
 
@@ -146,10 +152,13 @@ size_t Packet::write_to_fd(int fd) {
 	while(total_wrtn < PKT_LEN + 1) {
 		bytes_wrtn = write(fd, &ser_pkt.c_str()[total_wrtn], (ser_pkt.length() + 1 - total_wrtn));
 		if (bytes_wrtn < 0) {
-			throw Pkt_Exception(ERR_PKT_WRITE, ERR_PKT_WRITE_FD_FUNC);
+			// Check if read end of fd is closed, otherwise throw generic error
+			if (errno == EPIPE) { throw Pkt_Exception(ERR_PKT_WRITE_CLOSED_READ_END, ERR_PKT_WRITE_FD_FUNC, ERR_CODE_PKT_CLOSED_FD); }
+			else { throw Pkt_Exception(ERR_PKT_WRITE, ERR_PKT_WRITE_FD_FUNC, 0); }
 		} else if (bytes_wrtn == 0) {
 			break;
 		}
+		total_wrtn += bytes_wrtn;
 	}
 	return total_wrtn;
 }

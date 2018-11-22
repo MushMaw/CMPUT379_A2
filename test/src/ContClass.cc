@@ -23,14 +23,14 @@ Controller::Controller(int argc, char *argv[]) {
 	int nswitch;
 	std::string nswitch_str(""), portnum_str("");
 
-	if (argc != (CONT_ARG_COUNT + 1)) {throw Cont_Exception(ERR_CONT_CL_FORMAT, ERR_CONT_CONSTR_FUNC);}
+	if (argc != (CONT_ARG_COUNT + 1)) {throw Cont_Exception(ERR_CONT_CL_FORMAT, ERR_CONT_CONSTR_FUNC, 0);}
 	
 	try {
 		nswitch_str = argv[2];
 		nswitch = str_to_int(nswitch_str);
 
-		if (nswitch < 1) { throw Cont_Exception(ERR_NSWITCH_NON_POS, ERR_CONT_CONSTR_FUNC); }
-		if (nswitch > MAX_NSWITCH) { throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX, ERR_CONT_CONSTR_FUNC); }
+		if (nswitch < 1) { throw Cont_Exception(ERR_NSWITCH_NON_POS, ERR_CONT_CONSTR_FUNC, 0); }
+		if (nswitch > MAX_NSWITCH) { throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX, ERR_CONT_CONSTR_FUNC, 0); }
 		this->nswitch = nswitch;
 		this->running_sw_count = 0;
 
@@ -38,8 +38,8 @@ Controller::Controller(int argc, char *argv[]) {
 		this->portnum = str_to_int(portnum_str);
 
 		this->server = new Cont_Server(this->portnum, nswitch);
-	} catch (Parse_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_CONSTR_FUNC, e.get_traceback()); }
-	  catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_CONSTR_FUNC, e.get_traceback()); }
+	} catch (Parse_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	this->stats = new ContStats();
 	this->keep_running = true;
@@ -72,7 +72,7 @@ void Controller::init_switches() {
 				this->rcv_pkt(next_ready_sw);		
 			}
 		}
-	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_INIT_SWI_FUNC, e.get_traceback()); }
+	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_INIT_SWI_FUNC, e.get_traceback(), e.get_error_code()); }
 	std::cout << CONT_SW_START_DONE;
 }
 
@@ -104,7 +104,7 @@ void Controller::rcv_pkt(int sw_idx) {
 			} else if (pkt.ptype == PT_QUERY) {
 				this->handle_query(pkt, sw_idx);
 			} else {
-				throw Cont_Exception(ERR_INVALID_PKT_RCV, ERR_CONT_RCV_PKT_FUNC);
+				throw Cont_Exception(ERR_INVALID_PKT_RCV, ERR_CONT_RCV_PKT_FUNC, 0);
 			}
 
 			// Print receieved packet and log its type.
@@ -114,7 +114,7 @@ void Controller::rcv_pkt(int sw_idx) {
 			attempts++;
 		}
 	}
-	throw Cont_Exception(ERR_CONT_MAX_RCV_ATTEMPTS, ERR_CONT_RCV_PKT_FUNC);
+	throw Cont_Exception(ERR_CONT_MAX_RCV_ATTEMPTS, ERR_CONT_RCV_PKT_FUNC, 0);
 }
 
 /**
@@ -140,7 +140,7 @@ void Controller::send_pkt(Packet& pkt, int sw_idx) {
 			attempts++;
 		}
 	}	
-	throw Cont_Exception(ERR_CONT_MAX_SEND_ATTEMPTS, ERR_CONT_SEND_PKT_FUNC);
+	throw Cont_Exception(ERR_CONT_MAX_SEND_ATTEMPTS, ERR_CONT_SEND_PKT_FUNC, 0);
 }
 
 /**
@@ -167,9 +167,8 @@ void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
 		this->running_sw[sw_idx] = new_sw;
 		this->send_pkt(ack_pkt, sw_idx);
 		this->running_sw_count++;
-	} catch (Sw_Exception& e) {
-		throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback());
-	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback()); }
+	} catch (Sw_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback(), e.get_error_code());
+	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -246,7 +245,7 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	try {
 		this->send_pkt(add_pkt, sw_idx);
 		delete rule;
-	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_HANDLE_QUERY_FUNC, e.get_traceback()); }
+	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_HANDLE_QUERY_FUNC, e.get_traceback(), e.get_error_code()); }
 }	
 
 /**
@@ -356,8 +355,8 @@ void Controller::run() {
 				next_ready_sw = this->server->get_next_ready_cl();
 			}
 		}
-	} catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback()); }
-	  catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback()); }
+	} catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	// TODO: Clean up controller stuff if necessary
 	this->stop();

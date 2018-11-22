@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "parselib.h"
+#include "HeaderClass.h"
 
 #define RULE_DELIM std::string (" ")
 #define HEADER_DELIM std::string(" ")
@@ -32,9 +33,9 @@ class Rule {
 		SwPort act_val;
 
 		Rule(std::string serial_rule);
-		Rule(IP_Range src_IP, IP_Range dest_IP, int pri, int act_type, int act_val) 
-			: src_IP(src_IP),
-			  dest_IP(dest_IP),
+		Rule(IP_Range src_ip, IP_Range dest_ip, int pri, ActType act_type, SwPort act_val) 
+			: src_ip(src_ip),
+			  dest_ip(dest_ip),
 			  pri(pri),
 			  act_type(act_type),
 			  act_val(act_val) {}

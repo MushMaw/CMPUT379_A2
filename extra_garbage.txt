@@ -68,3 +68,26 @@ int CS_Socket::rcv_pkt(int send_sock, std::string& pkt, int pkt_len) {
 }
 
 */
+
+Older makefile
+
+a3sdn:
+
+ContClass.o: ContClass.cc, ContClass.h
+	g++ -std=c++11 -Wall -Iinclude -Llib
+
+SwClass.o: SwClass.cc, SwClass.h
+
+RuleClass.o: RuleClass.cc, RuleClass.h
+
+HeaderClass.o: HeaderClass.cc, HeaderClass.h
+
+PktStatsClass.o: PktStatsClass.cc, PktStatsClass.h
+
+CS_SocketClass.o: CS_SocketClass.cc, CS_SocketClass.h
+
+IPRangeClass.o: IPRangeClass.cc, IPRangeClass.h
+
+TimerClass.o: TimerClass.cc, TimerClass.h
+
+parselib.o: parselib.cc, parselib.h

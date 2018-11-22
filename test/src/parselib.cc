@@ -34,10 +34,10 @@ int get_sw_val(std::string const& sw_str) {
 			sw_num = str_to_int(sw_num_substr);
 			return sw_num;
 		}
-	} catch (Parse_Exception& e) { throw Parse_Exception(e.what(), ERR_PARSELIB_GET_SW_VAL_FUNC, e.get_traceback()); }
+	} catch (Parse_Exception& e) { throw Parse_Exception(e.what(), ERR_PARSELIB_GET_SW_VAL_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	// If first two chars of "sw_str" are not "sw", throw exception
-	throw Parse_Exception(ERR_PARSELIB_SW_NUM_FORMAT, ERR_PARSELIB_GET_SW_VAL_FUNC);
+	throw Parse_Exception(ERR_PARSELIB_SW_NUM_FORMAT, ERR_PARSELIB_GET_SW_VAL_FUNC, 0);
 }
 
 /**
@@ -53,7 +53,7 @@ int get_sw_val(std::string const& sw_str) {
  *	- Parse_Exception
  */
 void get_sw_str(int sw_val, std::string& sw_str) {
-	if (sw_val <= 0) { throw Parse_Exception(ERR_PARSELIB_NON_POS_SW_VAL, ERR_PARSELIB_GET_SW_STR_FUNC); }
+	if (sw_val <= 0) { throw Parse_Exception(ERR_PARSELIB_NON_POS_SW_VAL, ERR_PARSELIB_GET_SW_STR_FUNC, 0); }
 	sw_str.clear();
 	sw_str += SW_MODE;
 	sw_str += std::to_string(sw_val);
@@ -77,7 +77,7 @@ int str_to_int(std::string const& str) {
 
 	output = strtol(str.c_str(), &c_ptr, 10);
 	// Throw exception if non-numeric character is found in "str"
-	if (*c_ptr) { throw Parse_Exception(ERR_PARSELIB_NON_INT_CHAR, ERR_PARSELIB_STR_TO_INT_FUNC); }
+	if (*c_ptr) { throw Parse_Exception(ERR_PARSELIB_NON_INT_CHAR, ERR_PARSELIB_STR_TO_INT_FUNC, 0); }
 	
 	return output;
 }

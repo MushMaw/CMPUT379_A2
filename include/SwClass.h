@@ -39,6 +39,7 @@
 #define ERR_TFILE_NOT_FOUND "trafficfile not found\n"
 #define ERR_SW_VAL "Switch number must be an integer from 1 to 7\n"
 #define ERR_IP_RANGE_INVALID "IP values ip_low-ip_high must be positive integers where ip_low < ip_high\n"
+#define ERR_SW_POLL_FAIL "Polling failed\n"
 
 class Sw_Exception : public std::runtime_error {
 	public:
@@ -50,7 +51,7 @@ class Switch {
 		std::string tfile_name;
 		std::vector<Rule *> flow_table;
 		std::vector<struct pollfd> port_pfds;
-		ifstream tfile;
+		std::ifstream tfile;
 		bool keep_running;
 
 		Sw_Client * client;
@@ -66,6 +67,7 @@ class Switch {
 		Switch(std::string& ser_sw);
 
 		void serialize(std::string& ser_sw);
+		void deserialize(std::string& ser_sw);
 		void run();
 		
 };

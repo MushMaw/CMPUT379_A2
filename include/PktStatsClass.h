@@ -30,20 +30,20 @@ class PktStats {
 		std::map<int, int> send_stats;
 	public:
 		virtual void print();
-		void log_rcv(PType ptype);
-		void log_send(PType ptype);
-}
+		void log_rcv(PktType ptype);
+		void log_send(PktType ptype);
+};
 
 class ContStats : PktStats {
 	public:
 		ContStats();
 		void print() override;
-}
+};
 
 class SwStats : PktStats {
 	public:
 		SwStats();
 		void print() override;
-}
+};
 
 #endif

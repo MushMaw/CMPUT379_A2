@@ -40,7 +40,7 @@ enum PktLogMode {PKT_LOG_RCV_MODE, PKT_LOG_SEND_MODE};
 class Pkt_Exception: public std::runtime_error {
 	public:
 		Pkt_Exception(const char* message) : std::runtime_error(message){}
-}
+};
 
 class Packet {
 	public:
