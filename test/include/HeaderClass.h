@@ -1,3 +1,21 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: HeaderClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements class for representing Headers as read from a traffic file 
+ * (e.g. The lines "sw4 100 200" and "sw5 delay 500" are both considered
+ * headers.
+ *
+ * When a Header object is created from a traffic file line, it stores either
+ * the source and destination IP values or the timeout value depending on the line
+ * type, allowing the Switch to simply create a Header and check whether the timeout
+ * attribute is defined to determine what type of traffic file line it read.
+ *
+ * Implements functions for serializing/deserializing Headers to be sent/received
+ * by Controllers or Switches.
+ */
+
 #if !defined(HEADER_CLASS_H)
 #define HEADER_CLASS_H
 

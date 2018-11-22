@@ -1,6 +1,16 @@
 /**
- * CMPUT 379 - Assignment 2
+ * CMPUT 379 - Assignment 3
+ * File Name: constants.h
  * Student Name: Jacob Bakker
+ *
+ * This header contains basic constants used by many functions like the maximum number of Switches and
+ * minimum priority values for Rules.
+ *
+ * Contained is an Exception class used as the parent class of all Exception classes in the other files.
+ * Traceback Exception is intended to allow for the printing of a function traceback as well as an error
+ * code as specified by the function that first detected an error. 
+ * Each file that implements this class attaches the names of its function that either threw/caught the
+ * exception to the traceback string of the exception.
  */
 
 #if !defined(_A2_CONSTANTS_H)

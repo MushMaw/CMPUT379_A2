@@ -1,3 +1,17 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: RuleClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements class for pattern-action Rules to be stored in a Switch's flow table.
+ *
+ * Rules can be created either by supplying all required attributes (e.g. source/destination
+ * IP ranges, action type) or with a serialized Rule string.
+ *
+ * Implements methods for matching Header objects to Rules, incrementing packet counts, and
+ * printing a formatted message containing the Rule's attributes.
+ */
+
 #if !defined(A2_RULECLASS_H)
 #define A2_RULECLASS_H
 

@@ -1,3 +1,19 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: PktStatsClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements Packet Stats Classes for both Controllers and Switches.
+ *
+ * The parent Packet Stats Class contains methods for logging receieved/sent Packets
+ * by Packet type. 
+ *
+ * The two child classes - ContStats and SwStats - implement their
+ * own "print" methods for displaying the number of each Packet type receieved/sent
+ * according to which Packet types are receieved/sent by the Controller and Switch
+ * respectively.
+ */
+
 #if !defined(PKT_STATS_CLASS_H)
 #define PKT_STATS_CLASS_H 1
 

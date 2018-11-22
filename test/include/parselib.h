@@ -1,6 +1,13 @@
 /**
- * CMPUT 379 - Assignment 2
+ * CMPUT 379 - Assignment 3
+ * File Name: parselib.h
  * Student Name: Jacob Bakker
+ *
+ * Implements basic string parsing functions such as splitting a string into tokens and converting
+ * strings to integers.
+ *
+ * Additionally, contains functions getting names of Switches, names of FIFOs given Switch ID(s) and
+ * extracting Switch IDs from Switch names.
  */
 
 #if !defined(PARSELIB_H)

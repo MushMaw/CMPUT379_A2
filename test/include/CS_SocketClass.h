@@ -1,3 +1,20 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: CS_SocketClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements a TCP Server in the Cont_Server class and a TCP client
+ * in the Sw_Client class.
+ *
+ * Cont_Server contains functions for accepting/polling its client, closing
+ * a specific client, and closing all of its clients.
+ *
+ * Sw_Client contains functions for polling its server and closing its connection.
+ *
+ * Both Cont_Server and Sw_Client implement similar functions for reading from or 
+ * writing to their sockets. 
+ */
+
 #if !defined(CS_SOCKET_CLASS_H)
 #define CS_SOCKET_CLASS_H 1
 

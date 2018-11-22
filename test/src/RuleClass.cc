@@ -7,6 +7,7 @@
  *
  * Rules can be created either by supplying all required attributes (e.g. source/destination
  * IP ranges, action type) or with a serialized Rule string.
+ *
  * Implements methods for matching Header objects to Rules, incrementing packet counts, and
  * printing a formatted message containing the Rule's attributes.
  */

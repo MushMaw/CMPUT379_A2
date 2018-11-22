@@ -1,3 +1,14 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: IPRangeClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements basic class for representing IP ranges (e.g. 100-200).
+ *
+ * IP Ranges can be serialized/deserialized for sending between Controllers
+ * and Switches and queried as to whether a given IP value is in range.
+ */
+
 #if !defined(IPRANGE_CLASS_H)
 #define IPRANGE_CLASS_H 1
 

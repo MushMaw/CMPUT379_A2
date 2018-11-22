@@ -3,6 +3,10 @@
  * File Name: IPRangeClass.cc
  * Student Name: Jacob Bakker
  *
+ * Implements basic class for representing IP ranges (e.g. 100-200).
+ *
+ * IP Ranges can be serialized/deserialized for sending between Controllers
+ * and Switches and queried as to whether a given IP value is in range.
  */
 
 #include "IPRangeClass.h"

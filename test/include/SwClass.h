@@ -1,6 +1,24 @@
 /**
- * CMPUT 379 - Assignment 2
+ * CMPUT 379 - Assignment 3
+ * File Name: SwClass.h
  * Student Name: Jacob Bakker
+ *
+ * Implements a Switch class as part of a linear SDN system.
+ *
+ * The Switch communicates with the Controller via a TCP Server and
+ * with other Switches via FIFOs. Communication operations are non-
+ * blocking. Messages are transmitted using the Packet class.
+ *
+ * On startup, the Switch will send its information (e.g. ID, neighbor 
+ * Switch IDs, served IP range) to the Controller. Once acknowledged, the
+ * Switch will read from a specified traffic file and handle its specific
+ * headers either by admitting them or forwarding them to the appropriate
+ * Switch that serves the header's destination IP value.
+ *
+ * All Packets that are sent/received are outputted to stdout as a 
+ * log message describing its source, destination, type, and contents.
+ * The number of sent/receieved Packets, in addition to admitted Headers, can
+ * be displayed using the appropriate user command via stdin.
  */
 
 #if !defined(A2_SWCLASS_H)
@@ -99,14 +117,17 @@ class Switch {
 		void run();
 		void stop();
 		void start();
+
 		void poll_ports();
 		void list();
 		void print();
 		void read_next_traffic_line();
 		void handle_header(Header &header);
 		int query_cont(Header& header);
+
 		void execute_rule(Header& header, int rule_idx);
 		void install_rule(IP_Range src_IP, IP_Range dest_IP, ActType atype, SwPort aval, int pri);
+
 		void start_traffic_delay(int delay);
 		void handle_user_cmd();
 		void print_log(Packet& pkt, int sd, LogMode mode);

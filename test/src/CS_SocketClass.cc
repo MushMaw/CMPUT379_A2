@@ -1,11 +1,18 @@
 /**
  * CMPUT 379 - Assignment 3
- * File Name: CS_SktClass.cc
+ * File Name: CS_SocketClass.cc
  * Student Name: Jacob Bakker
  *
- * Implements TCP server and client classes to be used by Controllers and Switches respectively.
+ * Implements a TCP Server in the Cont_Server class and a TCP client
+ * in the Sw_Client class.
  *
- * Includes functions for polling the server or clients and sending/receiving Packet objects
+ * Cont_Server contains functions for accepting/polling its client, closing
+ * a specific client, and closing all of its clients.
+ *
+ * Sw_Client contains functions for polling its server and closing its connection.
+ *
+ * Both Cont_Server and Sw_Client implement similar functions for reading from or 
+ * writing to their sockets. 
  */
 
 #include "CS_SocketClass.h"
@@ -21,6 +28,8 @@
  * Return Value: None
  * Throws:
  *	- CS_Skt_Exception
+ * CITATION: The initialization of the server is based on the code provided in pages 21-24
+ * 	     of the CMPUT 379 lecture notes: "4. Sockets"
  */
 Cont_Server::Cont_Server(int port_num, int num_clients) {
 	struct sockaddr_in server;
@@ -66,6 +75,8 @@ Cont_Server::Cont_Server(int port_num, int num_clients) {
  * Parameters: None
  * Return Value: None 
  * Throws: None
+ * CITATION: The polling/accepting of new clients is based on the code provided in pages 21-24
+ * 	     of the CMPUT 379 lecture notes: "4. Sockets"
  */
 void Cont_Server::accept_clients() {
 	int n = 0, new_cl_sock = 0;
@@ -77,11 +88,13 @@ void Cont_Server::accept_clients() {
 	while(n < num_clients) {
 		if (poll(server_pfd_ptr, 1, 0) < 0) { throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_ACC_CL_FUNC, 0); }
 		if ((n < num_clients) && (this->server_pfd[0].revents & POLLIN)) {
+			// Get new client socket
 			fromlen = sizeof(from);
 			new_cl_sock = accept(serv_sock, (struct sockaddr *) &from, &fromlen);
 			if (new_cl_sock < 0) { throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_ACCEPT, ERR_CONT_SERVER_ACC_CL_FUNC, 0); }
 			this->cl_socks.push_back(new_cl_sock);
 
+			// Prepare for polling of new client
 			this->cl_pfds[n].fd = new_cl_sock;
 			this->cl_pfds[n].events = POLLIN;
 			this->cl_pfds[n].revents = 0;
@@ -235,18 +248,22 @@ void Cont_Server::close_client(int cl_idx) {
  * Return Value: None
  * Throws:
  *	- CS_Skt_Exception
+ * CITATION: The initialization of the client is based on the code provided in pages 16-20
+ * 	     of the CMPUT 379 lecture notes: "4. Sockets"
  */
 Sw_Client::Sw_Client(std::string& address, int port_num) {
 	struct sockaddr_in server;
 	struct pollfd cont_pfd;
 	struct hostent *hp = NULL;
 
+	// Create socket for communicating with server
 	this->port_num = port_num;
 	this->cl_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->cl_socket < 0) {
 		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_SW_CLIENT_CONSTR_FUNC, 0);
 	}
 
+	// Lookup host using given address
 	hp = gethostbyname(address.c_str());
 	if (hp == (struct hostent *) NULL) { throw CS_Skt_Exception(ERR_CS_SKT_NULL_HP, ERR_SW_CLIENT_CONSTR_FUNC, 0); }
 
@@ -255,21 +272,12 @@ Sw_Client::Sw_Client(std::string& address, int port_num) {
 	memcpy((char *) &server.sin_addr, hp->h_addr, hp->h_length);
 	server.sin_port = htons(port_num);
 
-	/**
-	 Attempt conversion for dotted-decimal address
-	if (inet_pton(AF_INET, address.c_str(), &server.sin_addr) > 0) {
-		valid_addr = true;
-		throw CS_Skt_Exception(ERR_CS_SKT_BINARY_CONVERT_ADDR, ERR_SW_CLIENT_CONSTR_FUNC);
-	}
-
-	 If not dotted-decimal, attempt conversion for symbolic name
-	if ((server.inet_addr(
-	*/
-
+	// Connect to server
 	if (connect(this->cl_socket, (struct sockaddr *) &server, sizeof(server)) < 0) {
 		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CONNECT, ERR_SW_CLIENT_CONSTR_FUNC, 0);
 	}
 
+	// Save socket for communicating with server
 	cont_pfd.fd = this->cl_socket;
 	cont_pfd.events = POLLIN;
 	cont_pfd.revents = 0;

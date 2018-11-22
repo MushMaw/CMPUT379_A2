@@ -1,3 +1,17 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: CS_log.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements functions for printing the beginning of a log for
+ * received/transmitted Packets by both Controllers and Switches.
+ *
+ * The beginning of the log only contains whether the Packet was
+ * receieved/sent, the Packet's source and destination, and the 
+ * Packet type. After printing this, the Controller/Switch prints
+ * the actual contents of the Packet.
+ */
+
 #if !defined(CS_LOG_H)
 #define CS_LOG_H 1
 

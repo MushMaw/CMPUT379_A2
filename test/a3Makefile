@@ -1,4 +1,5 @@
 # CMPUT 379 - Assignment 3
+# File Name: a3Makefile
 # Student Name: Jacob Bakker
 # CITATION: Makefile structure taken from https://stackoverflow.com/a/30602701
 
@@ -29,3 +30,6 @@ $(EXE): $(OBJ)
 
 clean:
 	$(RM) $(OBJ) $(EXE)
+
+tar:
+	tar -cvf submit.tar include/ obj/ src/ a3Makefile

@@ -5,8 +5,9 @@
  *
  * Implements basic string parsing functions such as splitting a string into tokens and converting
  * strings to integers.
- * Additionally, contains functions getting names of Switches or FIFOs given Switch ID(s) as well as
- * extracting Switch IDs from those names.
+ *
+ * Additionally, contains functions getting names of Switches, names of FIFOs given Switch ID(s) and
+ * extracting Switch IDs from Switch names.
  */
 
 

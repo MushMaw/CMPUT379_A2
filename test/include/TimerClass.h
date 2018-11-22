@@ -1,3 +1,15 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: TimerClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements a basic millisecond Timer.
+ *
+ * The Timer can be started with a target duration value given, allowing
+ * for a program to query the Timer about whether the target duration has
+ * been reached since having started it.
+ */
+
 #if !defined(TIMER_CLASS_H)
 #define TIMER_CLASS_H 1
 

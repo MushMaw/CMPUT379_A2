@@ -1,3 +1,31 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: ContClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements a Controller class as part of a linear SDN system.
+ *
+ * The Controller communicates with Switches (i.e. its clients) using a 
+ * TCP Server. All read/write operations to the Switches are non-blocking;
+ * the Controller repeatedly polls each client for incoming data.
+ *
+ * On startup, the Controller waits for the number of Switches specified by the
+ * user to both connect to the Controller's server and send an OPEN packet containing
+ * the Switch's information. The Controller responds with an ACK Packet, then repeats
+ * for all other Switches. The Controller will not start handling queries until all 
+ * Switches have connected.
+ *
+ * The Controller manages the handling of Headers by Switches by answering 
+ * queries about what action ought to be taken for Headers that don't match any
+ * of a Switch's rules. When queried, the Controller will examine all other switches
+ * to determine the Header's appropriate destination Switch (i.e. the Switch that
+ * serves the Header's destination IP), then send a Rule to the Switch containing
+ * the action for Header's of that type.
+ *
+ * If a Switch closes during the Controller's run, the Controller will notify the user
+ * of the Switch's closure and stop polling that Switch.
+ */
+
 #if !defined(A2_CONT_CLASS_H)
 #define A2_CONT_CLASS_H 1
 

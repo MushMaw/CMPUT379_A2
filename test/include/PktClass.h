@@ -1,3 +1,17 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: PktClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements Packet Class for sending messages through file descriptors (e.g. FIFOs,
+ * TCP sockets).
+ *
+ * Packet instances contain both a Packet Type (e.g. PT_ADMIT) and a string message. This
+ * message is intended to be a serialized instance of some object to be sent to a Controller
+ * or Switch (e.g. in a PT_OPEN Packet, a Switch stores a serialized version of itself to be
+ * sent to a Controller).
+ */
+
 #if !defined(A2_PKTCLASS_H)
 #define A2_PKTCLASS_H
 

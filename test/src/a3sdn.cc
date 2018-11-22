@@ -3,6 +3,9 @@
  * File Name: a3sdn.cc
  * Student Name: Jacob Bakker
  *
+ * Implements basic main function for taking command line arguments and determining
+ * whether to start a Controller or Switch based on the first argument. The arguments
+ * are then supplied to the appropriate class which handles their parsing and execution.
  */
 
 #include "a3sdn.h"

@@ -3,8 +3,11 @@
  * File Name: TimerClass.cc
  * Student Name: Jacob Bakker
  *
- * Implements basic Timer in milliseconds, allowing for a target number of milliseconds to be
- * set and for querying whether that target has been reached.
+ * Implements a basic millisecond Timer.
+ *
+ * The Timer can be started with a target duration value given, allowing
+ * for a program to query the Timer about whether the target duration has
+ * been reached since having started it.
  */
 
 #include "TimerClass.h"
