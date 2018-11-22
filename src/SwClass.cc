@@ -382,7 +382,7 @@ void Switch::start() {
 			}	
 		}
 		// Install initial rule for this Switch
-		this->install_rule(init_src, this->ip_range, AT_DROP, CONT_PORT, MIN_PRI);
+		this->install_rule(init_src, this->ip_range, AT_FORWARD, IP_PORT, MIN_PRI);
 
 		// Open read/write FIFO's to adjacent Switch's (if any)
 		this->open_adj_sw_fifos();
@@ -420,12 +420,17 @@ void Switch::open_adj_sw_fifos() {
 		sw_pfd.fd = -1;
 		this->port_pfds.push_back(sw_pfd);
 	} else {
-		get_fifo_name(fifo_name, this->id, this->swj_id);
-		this->swj_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
-
+		// Open FIFO for reading
 		get_fifo_name(fifo_name, this->swj_id, this->id);
 		sw_pfd.fd = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
 		this->port_pfds.push_back(sw_pfd);
+
+		// Keep attempting to open write FIFO until Switch J opens it in read mode
+		while (1) {
+			get_fifo_name(fifo_name, this->id, this->swj_id);
+			this->swj_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
+			if (this->swj_wr_fifo != -1) { break; }
+		}
 	}
 
 	// Init Switch K
@@ -434,12 +439,17 @@ void Switch::open_adj_sw_fifos() {
 		sw_pfd.fd = -1;
 		this->port_pfds.push_back(sw_pfd);
 	} else {
-		get_fifo_name(fifo_name, this->id, this->swk_id);
-		this->swk_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
-
+		// Open FIFO for reading
 		get_fifo_name(fifo_name, this->swk_id, this->id);
 		sw_pfd.fd = open(fifo_name.c_str(), O_RDONLY | O_NONBLOCK);
 		this->port_pfds.push_back(sw_pfd);
+
+		// Keep attempting to open write FIFO until Switch K opens it in read mode
+		while (1) {
+			get_fifo_name(fifo_name, this->id, this->swk_id);
+			this->swk_wr_fifo = open(fifo_name.c_str(), O_WRONLY  | O_NONBLOCK);
+			if (this->swk_wr_fifo != -1) { break; }
+		}
 	}
 }
 
@@ -509,6 +519,8 @@ void Switch::read_next_traffic_line() {
 			if (header.timeout > 0) {
 				this->start_traffic_delay(header.timeout);
 			} else {
+				// Log admitted header
+				this->stats->log_rcv(PT_ADMIT);
 				this->handle_header(header);
 			}
 		} 
@@ -605,14 +617,11 @@ void Switch::execute_rule(Header& header, int rule_idx) {
 	try {
 		// If action type is FORWARD, send header to specified port
 		rule = this->flow_table[rule_idx];
-		if (rule->act_type == AT_FORWARD) {
+		if (rule->act_type == AT_FORWARD && rule->act_val != IP_PORT) {
 			relay_pkt.ptype = PT_RELAY;
 			header.serialize(ser_header);
 			relay_pkt.msg = ser_header;
 			this->send_pkt(relay_pkt, rule->act_val);
-		} else {
-			// Log admitted header
-			this->stats->log_rcv(PT_ADMIT);
 		}
 		// Increment packet count of rule
 		this->flow_table[rule_idx]->pkt_count++;
@@ -719,6 +728,7 @@ void Switch::stop() {
  */
 void Switch::run() {
 	Packet pkt;
+	Header header;
 	struct pollfd stdin_pfd[1];
 
 	try {
@@ -752,18 +762,23 @@ void Switch::run() {
 				break;
 			}
 			
-			// Poll adjacent switches
+			// Poll adjacent switches and handle headers from RELAY pkts if any
 			this->poll_ports();
 			if (this->port_pfds[0].revents & POLLIN) {
 				this->port_pfds[0].revents = 0;
 				this->rcv_pkt(pkt, SWJ_PORT);
+				header.deserialize(pkt.msg);
+				this->handle_header(header);
 			} else if (this->port_pfds[1].revents & POLLIN) {
 				this->port_pfds[1].revents = 0;
 				this->rcv_pkt(pkt, SWK_PORT);
+				header.deserialize(pkt.msg);
+				this->handle_header(header);
 			}
 			
 		} 
 	} catch (Sw_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Header_Exception& e) { throw Sw_Exception(e.what(), ERR_SW_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
 	
 	this->stop();
 	std::cout << "\n" << SW_EXIT_MSG << "\n";
