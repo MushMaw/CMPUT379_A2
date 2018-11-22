@@ -6,7 +6,9 @@
  * Implements Packet Stats Classes for both Controllers and Switches.
  *
  * The parent Packet Stats Class contains methods for logging receieved/sent Packets
- * by Packet type. The two child classes - ContStats and SwStats - implement their
+ * by Packet type. 
+ *
+ * The two child classes - ContStats and SwStats - implement their
  * own "print" methods for displaying the number of each Packet type receieved/sent
  * according to which Packet types are receieved/sent by the Controller and Switch
  * respectively.
@@ -37,7 +39,7 @@ SwStats::SwStats() {
 }
 
 /**
- * Function: log_rcv
+ * Function: log_rcv (ContStats)
  * -----------------------
  * Increments number of receieved packets of type "ptype".
  *
@@ -46,12 +48,12 @@ SwStats::SwStats() {
  * Return Value: None
  * Throws: None
  */
-void PktStats::log_rcv(PType ptype) {
+void ContStats::log_rcv(PktType ptype) {
 	this->rcv_stats[ptype]++;
 }
 
 /**
- * Function: log_send
+ * Function: log_send (ContStats)
  * -----------------------
  * Increments number of sent packets of type "ptype".
  *
@@ -60,9 +62,10 @@ void PktStats::log_rcv(PType ptype) {
  * Return Value: None
  * Throws: None
  */
-void PktStats::log_send(PType ptype) {
+void ContStats::log_send(PktType ptype) {
 	this->send_stats[ptype]++;
 }
+
 /**
  * Function: print (ContStats)
  * -----------------------
@@ -81,6 +84,33 @@ void ContStats::print() {
 }
 
 /**
+ * Function: log_rcv (SwStats)
+ * -----------------------
+ * Increments number of receieved packets of type "ptype".
+ *
+ * Parameters:
+ * 	- ptype: Packet type that was receieved.
+ * Return Value: None
+ * Throws: None
+ */
+void SwStats::log_rcv(PktType ptype) {
+	this->rcv_stats[ptype]++;
+}
+
+/**
+ * Function: log_send (SwStats)
+ * -----------------------
+ * Increments number of sent packets of type "ptype".
+ *
+ * Parameters:
+ * 	- ptype: Packet type that was sent.
+ * Return Value: None
+ * Throws: None
+ */
+void SwStats::log_send(PktType ptype) {
+	this->send_stats[ptype]++;
+}
+/**
  * Function: print (SwStats)
  * -----------------------
  * Prints number of received/sent Packets for each Packet type
@@ -95,6 +125,6 @@ void SwStats::print() {
 	fprintf(stdout, SWSTATS_PRINT_RCV, this->rcv_stats[PT_ADMIT], this->rcv_stats[PT_ACK],
 					   this->rcv_stats[PT_ADD], this->rcv_stats[PT_RELAY]);
 	std::cout << PKTSTATS_PRINT_SEND;
-	fprintf(stdout, SWSTATS_PRINT_RCV, this->send_stats[PT_OPEN], this->send_stats[PT_QUERY],
-					   this->send_stats[PT_RELAY]);
+	fprintf(stdout, SWSTATS_PRINT_SEND, this->send_stats[PT_OPEN], this->send_stats[PT_QUERY],
+					    this->send_stats[PT_RELAY]);
 }

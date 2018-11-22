@@ -1,5 +1,36 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: IPRangeClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements basic class for representing IP ranges (e.g. 100-200).
+ *
+ * IP Ranges can be serialized/deserialized for sending between Controllers
+ * and Switches and queried as to whether a given IP value is in range.
+ */
+
 #if !defined(IPRANGE_CLASS_H)
 #define IPRANGE_CLASS_H 1
+
+#include <string>
+#include <exception>
+
+#include "parselib.h"
+#include "constants.h"
+
+#define IP_RANGE_DELIM std::string("-")
+
+#define ERR_IP_RANGE_DESERIALIZE_FUNC std::string("IP_Range::serialize(): ")
+
+#define ERR_IP_RANGE_FORMAT "Invalid IP range format\n"
+
+class IP_Range_Exception :  public Traceback_Exception {
+	public:
+		IP_Range_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code) 
+		: Traceback_Exception(msg, cur_func, func_traceback, error_code) {}
+		IP_Range_Exception(const char* msg, const std::string cur_func, int error_code)
+		: Traceback_Exception(msg, cur_func, error_code) {}
+};
 
 class IP_Range {
 	public:
@@ -7,6 +38,10 @@ class IP_Range {
 
 		IP_Range();
 		IP_Range(int low, int high);
+		IP_Range(std::string& ser_ip);
+
+		void serialize(std::string& ser_ip);
+		void deserialize(std::string& ser_ip);
 		bool is_in_range(int ip_val);
 };
 

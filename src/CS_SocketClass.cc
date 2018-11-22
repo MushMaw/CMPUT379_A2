@@ -1,11 +1,18 @@
 /**
  * CMPUT 379 - Assignment 3
- * File Name: CS_SktClass.cc
+ * File Name: CS_SocketClass.cc
  * Student Name: Jacob Bakker
  *
- * Implements TCP server and client classes to be used by Controllers and Switches respectively.
+ * Implements a TCP Server in the Cont_Server class and a TCP client
+ * in the Sw_Client class.
  *
- * Includes functions for polling the server or clients and sending/receiving Packet objects
+ * Cont_Server contains functions for accepting/polling its client, closing
+ * a specific client, and closing all of its clients.
+ *
+ * Sw_Client contains functions for polling its server and closing its connection.
+ *
+ * Both Cont_Server and Sw_Client implement similar functions for reading from or 
+ * writing to their sockets. 
  */
 
 #include "CS_SocketClass.h"
@@ -21,9 +28,10 @@
  * Return Value: None
  * Throws:
  *	- CS_Skt_Exception
+ * CITATION: The initialization of the server is based on the code provided in pages 21-24
+ * 	     of the CMPUT 379 lecture notes: "4. Sockets"
  */
 Cont_Server::Cont_Server(int port_num, int num_clients) {
-	int serv_sock;
 	struct sockaddr_in server;
 	struct pollfd server_pfd;
 
@@ -38,26 +46,25 @@ Cont_Server::Cont_Server(int port_num, int num_clients) {
 	// Create master socket
 	this->serv_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->serv_sock < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_CONT_SERVER_CONSTR_FUNC, 0);
 	}
 
 	// Prepare for polling incoming client connections
 	server_pfd.fd = this->serv_sock;
 	server_pfd.events = POLLIN;
-	server.pfd.revents = 0;
+	server_pfd.revents = 0;
 	this->server_pfd.push_back(server_pfd);
 
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = htonl(INADDR_ANY);
 	server.sin_port = htons(port_num);
 
-	if (bind(serv_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_BIND);
+	if (bind(this->serv_sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_BIND, ERR_CONT_SERVER_CONSTR_FUNC, 0);
 	}
 
 	// Accepts connections from specified number of clients
-	listen(server, num_clients);
-	this->accept_clients();
+	listen(this->serv_sock, num_clients);
 }
 
 /**
@@ -68,25 +75,29 @@ Cont_Server::Cont_Server(int port_num, int num_clients) {
  * Parameters: None
  * Return Value: None 
  * Throws: None
+ * CITATION: The polling/accepting of new clients is based on the code provided in pages 21-24
+ * 	     of the CMPUT 379 lecture notes: "4. Sockets"
  */
 void Cont_Server::accept_clients() {
-	int n = 0, fromlen = 0, new_cl_sock = 0;
+	int n = 0, new_cl_sock = 0;
 	struct pollfd * server_pfd_ptr = &(this->server_pfd[0]);
 	struct sockaddr_in from;
+	socklen_t fromlen;
 
 	// Poll master socket until "num_clients" clients have connected
-	while(1) {
-		if (poll(server_pfd_ptr, 1, 0) < 0) { throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR); }
+	while(n < num_clients) {
+		if (poll(server_pfd_ptr, 1, 0) < 0) { throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_ACC_CL_FUNC, 0); }
 		if ((n < num_clients) && (this->server_pfd[0].revents & POLLIN)) {
+			// Get new client socket
 			fromlen = sizeof(from);
-
 			new_cl_sock = accept(serv_sock, (struct sockaddr *) &from, &fromlen);
-			if (new_cl_sock < 0) { throw CS_Skt_Exception(ERR_CS_SKT_ACCEPT_ERROR); }
+			if (new_cl_sock < 0) { throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_ACCEPT, ERR_CONT_SERVER_ACC_CL_FUNC, 0); }
 			this->cl_socks.push_back(new_cl_sock);
 
-			this->cl_pollfds[n].fd = new_cl_sock;
-			this->cl_pollfds[n].events = POLLIN;
-			this->cl_pollfds[n].revents = 0;
+			// Prepare for polling of new client
+			this->cl_pfds[n].fd = new_cl_sock;
+			this->cl_pfds[n].events = POLLIN;
+			this->cl_pfds[n].revents = 0;
 			n++;
 		}
 	}
@@ -102,9 +113,9 @@ void Cont_Server::accept_clients() {
  * Throws: None
  */
 void Cont_Server::poll_clients() {
-	struct pollfd * cl_pollfds_ptr = &(this->cl_pollfds[0]);
-	if (poll(cl_pollfds_ptr, this->num_clients, 0) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR);
+	struct pollfd * cl_pfds_ptr = &(this->cl_pfds[0]);
+	if (poll(cl_pfds_ptr, this->num_clients, 0) < 0) {
+		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_CONT_SERVER_POLL_CL_FUNC, 0);
 	}
 }
 
@@ -121,8 +132,7 @@ void Cont_Server::poll_clients() {
  * Throws: None
  */
 bool Cont_Server::client_is_ready(int cl_idx) {
-	if (this->cl_pfds[i].revents & POLLIN) {
-		this->cl_pfds[i].revents = 0;
+	if (this->cl_pfds[cl_idx].revents & POLLIN) {
 		return true;
 	} else { return false; }
 }
@@ -167,7 +177,7 @@ size_t Cont_Server::send_pkt(Packet& pkt, int cl_idx) {
 	cl_fd = this->cl_socks[cl_idx];
 	try {
 		bytes_wrtn = pkt.write_to_fd(cl_fd);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_CONT_SERVER_SEND_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_wrtn;
 }
 
@@ -191,8 +201,40 @@ size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
 	cl_fd = this->cl_socks[cl_idx];
 	try {
 		bytes_read = pkt.read_from_fd(cl_fd);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_CONT_SERVER_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_read;
+}
+
+/**
+ * Function: close_all
+ * -----------------------
+ * Closes all client sockets of server.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
+void Cont_Server::close_all() {
+	for (int i = 0; i < num_clients; i++) {
+		this->close_client(i);
+	}
+}
+
+/**
+ * Function: close_client
+ * -----------------------
+ * Closes specific client socket.
+ *
+ * Parameters: 
+ *	- cl_idx: Index of client socket in server's list of clients
+ * Return Value: None
+ * Throws: None
+ */
+void Cont_Server::close_client(int cl_idx) {
+	if (this->cl_pfds[cl_idx].fd != -1) {
+		close(this->cl_pfds[cl_idx].fd);
+		this->cl_pfds[cl_idx].fd = -1;
+	}
 }
 
 /**
@@ -206,34 +248,40 @@ size_t Cont_Server::rcv_pkt(Packet& pkt, int cl_idx) {
  * Return Value: None
  * Throws:
  *	- CS_Skt_Exception
+ * CITATION: The initialization of the client is based on the code provided in pages 16-20
+ * 	     of the CMPUT 379 lecture notes: "4. Sockets"
  */
 Sw_Client::Sw_Client(std::string& address, int port_num) {
-	int cl_sock;
 	struct sockaddr_in server;
 	struct pollfd cont_pfd;
+	struct hostent *hp = NULL;
 
+	// Create socket for communicating with server
 	this->port_num = port_num;
 	this->cl_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->cl_socket < 0) {
-		throw CS_Skt_Exception(ERR_SOCKET_CREATE);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CREATE, ERR_SW_CLIENT_CONSTR_FUNC, 0);
 	}
 
-	memset(&server, 0, sizeof(server));
-	server.sin_family = AF_INET;
+	// Lookup host using given address
+	hp = gethostbyname(address.c_str());
+	if (hp == (struct hostent *) NULL) { throw CS_Skt_Exception(ERR_CS_SKT_NULL_HP, ERR_SW_CLIENT_CONSTR_FUNC, 0); }
+
+	memset((char *) &server, 0, sizeof(server));
+	server.sin_family = hp->h_addrtype;
+	memcpy((char *) &server.sin_addr, hp->h_addr, hp->h_length);
 	server.sin_port = htons(port_num);
 
-	if (inet_pton(AF_INET, address, &server.sin_addr) <= 0) {
-		throw CS_Skt_Exception(ERR_BINARY_CONVERT_ADDR);
-	}
-
+	// Connect to server
 	if (connect(this->cl_socket, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		throw CS_Skt_Exception(ERR_SOCKET_CONNECT);
+		throw CS_Skt_Exception(ERR_CS_SKT_SOCKET_CONNECT, ERR_SW_CLIENT_CONSTR_FUNC, 0);
 	}
 
+	// Save socket for communicating with server
 	cont_pfd.fd = this->cl_socket;
 	cont_pfd.events = POLLIN;
 	cont_pfd.revents = 0;
-	this->pfd.pushback(cont_pfd);
+	this->pfd.push_back(cont_pfd);
 }
 
 /**
@@ -252,7 +300,7 @@ size_t Sw_Client::rcv_pkt(Packet& pkt) {
 	size_t bytes_read;
 	try {
 		bytes_read = pkt.read_from_fd(this->cl_socket);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_RCV_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_read;
 }
 
@@ -272,7 +320,7 @@ size_t Sw_Client::send_pkt(Packet& pkt) {
 	size_t bytes_wrtn;
 	try {
 		bytes_wrtn = pkt.write_to_fd(this->cl_socket);
-	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what()); }
+	} catch (Pkt_Exception& e) { throw CS_Skt_Exception(e.what(), ERR_SW_CLIENT_SEND_PKT_FUNC, e.get_traceback(), e.get_error_code()); }
 	return bytes_wrtn;
 }
 
@@ -289,7 +337,7 @@ size_t Sw_Client::send_pkt(Packet& pkt) {
 void Sw_Client::poll_server() {
 	struct pollfd * pfd_ptr = &(this->pfd[0]);
 	if (poll(pfd_ptr, 1, 0) < 0) {
-		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR);
+		throw CS_Skt_Exception(ERR_CS_SKT_POLL_ERROR, ERR_SW_CLIENT_POLL_SERV_FUNC, 0);
 	}
 }
 
@@ -308,4 +356,17 @@ bool Sw_Client::is_pkt_from_server() {
 		this->pfd[0].revents = 0;	
 		return true;
 	} else { return false; }
+}
+
+/**
+ * Function: close_client
+ * -----------------------
+ * Closes Switch client's socket to server.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
+void Sw_Client::close_client() {
+	close(this->cl_socket);
 }

@@ -1,3 +1,17 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: PktClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements Packet Class for sending messages through file descriptors (e.g. FIFOs,
+ * TCP sockets).
+ *
+ * Packet instances contain both a Packet Type (e.g. PT_ADMIT) and a string message. This
+ * message is intended to be a serialized instance of some object to be sent to a Controller
+ * or Switch (e.g. in a PT_OPEN Packet, a Switch stores a serialized version of itself to be
+ * sent to a Controller).
+ */
+
 #if !defined(A2_PKTCLASS_H)
 #define A2_PKTCLASS_H
 
@@ -18,28 +32,27 @@
 #define PKT_DELIM std::string (" ")
 #define PKT_EMPTY_MSG std::string("")
 
-#define PKT_LOG_RCV_STR "Received: "
-#define PKT_LOG_SEND_STR "Transmitted: "
-#define PKT_LOG_SRC_DEST_STR "(src= %s, dest= %s) "
-#define PKT_LOG_CONT_STR std::string("cont")
+#define ERR_CODE_PKT_CLOSED_FD 1000
 
-#define PKT_LOG_CONT std::string("cont")
-
-#define PTYPE_STR_OPEN "[OPEN]"
-#define PTYPE_STR_ACK "[ACK]"
-#define PTYPE_STR_QUERY "[QUERY]"
-#define PTYPE_STR_ADD "[ADD]"
-#define PTYPE_STR_RELAY "[RELAY]"
+#define ERR_PKT_READ_FD_FUNC std::string("Packet::read_from_fd()")
+#define ERR_PKT_WRITE_FD_FUNC std::string("Packet::write_to_fd()")
+#define ERR_PKT_DESERIALIZE_FUNC std::string("Packet::deserialize()")
 
 #define ERR_PKT_READ "Error during read from file descriptor\n"
+#define ERR_PKT_READ_CLOSED_WRITE_END "Write End of fd is closed\n"
 #define ERR_PKT_WRITE "Error during write to file descriptor\n"
+#define ERR_PKT_WRITE_CLOSED_READ_END "Read end of fd is closed\n"
+#define ERR_PKT_SER_FORMAT "Invalid format given in serialized Packet\n"
 
-enum PktType {PT_UNINIT, PT_OPEN, PT_ACK, PT_QUERY, PT_ADD, PT_RELAY, PT_ADMIT};
-enum PktLogMode {PKT_LOG_RCV_MODE, PKT_LOG_SEND_MODE};
+typedef enum {PT_UNINIT, PT_OPEN, PT_ACK, PT_QUERY, PT_ADD, PT_RELAY, PT_ADMIT} PktType;
 
-class Pkt_Exception: public std::runtime_error {
+
+class Pkt_Exception : public Traceback_Exception {
 	public:
-		Pkt_Exception(const char* message) : std::runtime_error(message){}
+		Pkt_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code)
+		: Traceback_Exception(msg, cur_func, func_traceback, error_code) {}
+		Pkt_Exception(const char* msg, const std::string cur_func, int error_code)
+		: Traceback_Exception(msg, cur_func, error_code) {}
 };
 
 class Packet {
@@ -48,6 +61,7 @@ class Packet {
 		std::string msg;
 	
 		Packet();
+		Packet(PktType ptype);
 		Packet(PktType ptype, std::string& msg);
 		Packet(std::string& pkt);
 

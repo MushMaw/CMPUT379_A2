@@ -1,5 +1,0 @@
-test: src/IPRangeClass.cc include/IPRangeClass.h
-	g++ -Wall src/IPRangeClass.cc -o test
-clean:
-	rm -f test
-

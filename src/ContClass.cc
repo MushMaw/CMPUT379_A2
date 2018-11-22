@@ -3,6 +3,27 @@
  * File Name: ContClass.cc
  * Student Name: Jacob Bakker
  *
+ * Implements a Controller class as part of a linear SDN system.
+ *
+ * The Controller communicates with Switches (i.e. its clients) using a 
+ * TCP Server. All read/write operations to the Switches are non-blocking;
+ * the Controller repeatedly polls each client for incoming data.
+ *
+ * On startup, the Controller waits for the number of Switches specified by the
+ * user to both connect to the Controller's server and send an OPEN packet containing
+ * the Switch's information. The Controller responds with an ACK Packet, then repeats
+ * for all other Switches. The Controller will not start handling queries until all 
+ * Switches have connected.
+ *
+ * The Controller manages the handling of Headers by Switches by answering 
+ * queries about what action ought to be taken for Headers that don't match any
+ * of a Switch's rules. When queried, the Controller will examine all other switches
+ * to determine the Header's appropriate destination Switch (i.e. the Switch that
+ * serves the Header's destination IP), then send a Rule to the Switch containing
+ * the action for Header's of that type.
+ *
+ * If a Switch closes during the Controller's run, the Controller will notify the user
+ * of the Switch's closure and stop polling that Switch.
  */
 
 #include "ContClass.h"
@@ -23,24 +44,46 @@ Controller::Controller(int argc, char *argv[]) {
 	int nswitch;
 	std::string nswitch_str(""), portnum_str("");
 
-	if (argc != (CONT_ARG_COUNT + 1)) {throw Cont_Exception(ERR_CONT_CL_FORMAT);}
+	if (argc != CONT_ARG_COUNT) {throw Cont_Exception(ERR_CONT_CL_FORMAT, ERR_CONT_CONSTR_FUNC, 0);}
 	
 	try {
 		nswitch_str = argv[2];
 		nswitch = str_to_int(nswitch_str);
 
-		if (nswitch < 1) { throw Cont_Exception(ERR_NSWITCH_NON_POS); }
-		if (nswitch > MAX_NSWITCH) { throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX); }
+		if (nswitch < 1) { throw Cont_Exception(ERR_NSWITCH_NON_POS, ERR_CONT_CONSTR_FUNC, 0); }
+		if (nswitch > MAX_NSWITCH) { throw Cont_Exception(ERR_NSWITCH_EXCEED_MAX, ERR_CONT_CONSTR_FUNC, 0); }
 		this->nswitch = nswitch;
+
+		// Set placeholders for expected number of switches
+		for (int i = 0; i < this->nswitch; i++) { this->running_sw.push_back((Switch *) NULL); }
+		this->running_sw_count = 0;
 
 		portnum_str = argv[3];
 		this->portnum = str_to_int(portnum_str);
 
-		this->server = new Cont_Server(port_num, nswitch);
-	} catch (Parse_Exception& e) { throw Cont_Exception(e.what()); }
-	  catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what()); }
+		this->server = new Cont_Server(this->portnum, nswitch);
+	} catch (Parse_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_CONSTR_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	this->stats = new ContStats();
+	this->keep_running = true;
+}
+
+/**
+ * Function: Controller Destructor
+ * -----------------------
+ * Deletes all allocated attributes of Controller.
+ *
+ * Parameters: None
+ * Return Value: None
+ * Throws: None
+ */
+Controller::~Controller() {
+	delete this->server;
+	delete this->stats;
+	for (int i = 0; i < this->nswitch; i++) {
+		delete this->running_sw[i];
+	}
 }
 
 /**
@@ -54,21 +97,24 @@ Controller::Controller(int argc, char *argv[]) {
  *
  * Parameters: None 
  * Return Value: None
- * Throws: None
+ * Throws: 
+ *	- Cont_Exception
  */
 void Controller::init_switches() {
 	int next_ready_sw = -1;	
 
-	std::cout << CONT_WAIT_SW_START;
-	while (this->running_sw != this->nswitch) {
-		this->server->poll_clients();
-		next_ready_sw = this->server->get_next_ready_cl();
+	std::cout << CONT_WAIT_SW_START << "\n";
+	try {
+		while (this->running_sw_count != this->nswitch) {
+			this->server->poll_clients();
+			next_ready_sw = this->server->get_next_ready_cl();
 
-		if (next_ready_sw >= 0 && this->running_sw[next_ready_sw] == NULL) {
-			this->rcv_pkt(sw_idx);		
+			if (next_ready_sw >= 0 && this->running_sw[next_ready_sw] == NULL) {
+				this->rcv_pkt(next_ready_sw);		
+			}
 		}
-	}
-	std::cout << CONT_SW_START_DONE;
+	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_INIT_SWI_FUNC, e.get_traceback(), e.get_error_code()); }
+	std::cout << "\n" << CONT_SW_START_DONE << "\n";
 }
 
 /**
@@ -86,6 +132,8 @@ void Controller::init_switches() {
  */
 void Controller::rcv_pkt(int sw_idx) {
 	int attempts = 0;
+	Packet pkt;
+
 	while (attempts < CONT_MAX_RCV_ATTEMPTS) {
 		try {
 			// Send Packet through server
@@ -97,17 +145,43 @@ void Controller::rcv_pkt(int sw_idx) {
 			} else if (pkt.ptype == PT_QUERY) {
 				this->handle_query(pkt, sw_idx);
 			} else {
-				throw Cont_Exception(ERR_INVALID_PKT_RCV);
+				std::cout << ERR_INVALID_PKT_RCV;
 			}
 
 			// Print receieved packet and log its type.
 			this->stats->log_rcv(pkt.ptype);
+			this->print_log(pkt, sw_idx, LOG_RCV_MODE);
 			return;
 		} catch (CS_Skt_Exception& e) {
+			// Check if Switch closed unexpectedly
+			if (e.get_error_code() == ERR_CODE_PKT_CLOSED_FD) {
+				this->handle_sw_termination(sw_idx);
+				return;
+			}
 			attempts++;
 		}
 	}
-	throw Cont_Exception(ERR_CONT_MAX_RCV_ATTEMPTS);
+	throw Cont_Exception(ERR_CONT_MAX_RCV_ATTEMPTS, ERR_CONT_RCV_PKT_FUNC, 0);
+}
+
+/**
+ * Function: handle_sw_termination
+ * -----------------------
+ * After a Switch is detected as having closed unexpectedly, this function
+ * closes the client connection and outputs a message indicating the closure.
+ *
+ * Parameters:
+ *	- sw_idx: The Switch's index in the Controllers list of running Switches.
+ * Return Value: None
+ * Throws: None
+ */
+void Controller::handle_sw_termination(int sw_idx) {
+	int sw_id;
+
+	this->server->close_client(sw_idx);
+	sw_id = this->running_sw[sw_idx]->id;
+	fprintf(stdout, CONT_SW_CLIENT_CLOSED_MSG, sw_id);
+	std::cout << "\n";
 }
 
 /**
@@ -128,12 +202,77 @@ void Controller::send_pkt(Packet& pkt, int sw_idx) {
 		try {
 			this->server->send_pkt(pkt, sw_idx);
 			this->stats->log_send(pkt.ptype);
+			this->print_log(pkt, sw_idx, LOG_SEND_MODE);
 			return;
 		} catch (CS_Skt_Exception& e) {
+			// Check if Switch closed unexpectedly
+			if (e.get_error_code() == ERR_CODE_PKT_CLOSED_FD) {
+				this->handle_sw_termination(sw_idx);
+				return;
+			}
 			attempts++;
 		}
 	}	
-	throw Cont_Exception(ERR_CONT_MAX_SEND_ATTEMPTS);
+	throw Cont_Exception(ERR_CONT_MAX_SEND_ATTEMPTS, ERR_CONT_SEND_PKT_FUNC, 0);
+}
+
+/**
+ * Function: print_log
+ * -----------------------
+ * Prints information about Packet including whether it was received or sent, its source
+ * and destination, and the contents of its message.
+ *
+ * Parameters: 
+ *	- pkt: Packet to be printed as log
+ *	- sd: Either source or destination of Packet. Its identity is based on the "mode",
+ *	      where "send" mode means "sd" = destination.
+ *	- mode: Either "receive" or "send" mode
+ * Return Value: None
+ * Throws: None
+ */
+void Controller::print_log(Packet& pkt, int sw_idx, LogMode mode) {
+	int src = -1, dest = -1, sw_id = 0;
+	Header rcv_header;
+	Rule * send_rule = NULL;
+	
+	// Get Switch ID
+	sw_id = this->running_sw[sw_idx]->id;
+
+	// Define Packet source and destination.
+	if (mode == LOG_RCV_MODE) {
+		src = sw_id;
+		dest = 0;
+	} else {
+		src = 0;
+		dest = sw_id;
+	}
+	
+	// Print start of log
+	print_log_start(src, dest, mode, pkt.ptype);
+
+	// Print contents of Packet
+	switch(pkt.ptype) {
+		case PT_OPEN:
+			this->running_sw[sw_idx]->print(); break;
+		case PT_ACK:
+			break;
+		case PT_QUERY:
+			rcv_header.deserialize(pkt.msg);
+			rcv_header.print();
+			break;
+		case PT_ADD:
+			send_rule = new Rule(pkt.msg);
+			send_rule->print();
+			delete send_rule;
+			break;
+		case PT_RELAY:
+			break;
+		case PT_UNINIT:
+			break;
+		case PT_ADMIT:
+			break;
+	}
+	std::cout << "\n";
 }
 
 /**
@@ -152,16 +291,15 @@ void Controller::send_pkt(Packet& pkt, int sw_idx) {
  *	- Cont_Exception
  */
 void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
-	Packet ack_pkt(PT_ACK, PKT_EMPTY_MSG);
+	Packet ack_pkt(PT_ACK);
 	Switch * new_sw = NULL;
-
 	try {
-		new_sw = new Switch();
+		new_sw = new Switch(open_pkt.msg);
 		this->running_sw[sw_idx] = new_sw;
-		this->send_pkt(pkt, sw_idx);
-	} catch (Sw_Exception& e) {
-		throw Cont_Exception(e.what());
-	} catch (Cont_Exception& e) { throw; }
+		this->send_pkt(ack_pkt, sw_idx);
+		this->running_sw_count++;
+	} catch (Sw_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback(), e.get_error_code());
+	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_OPEN_SW_FUNC, e.get_traceback(), e.get_error_code()); }
 }
 
 /**
@@ -179,18 +317,22 @@ void Controller::open_new_sw(Packet &open_pkt, int sw_idx) {
  *	- sw_idx: The index of the Switch in the Controller's list. 
  * Return Value: None
  * Throws:
- *	- 
+ *	- Cont_Exception
  */
 void Controller::handle_query(Packet &que_pkt, int sw_idx) {
-	Header header();
-	int dest_sw = -1, dest_sw_idx = -1, act_val;
+	Header header;
+	int dest_sw = -1, sw_id; //,dest_sw_idx = -1,
 
 	Switch * sw;
-	Packet add_pkt();
+	Packet add_pkt;
 	Rule * rule;
 	std::string ser_rule("");
 	ActType act_type;
-	IP_Range src_ip(), dest_ip();
+	SwPort act_val;
+	IP_Range src_ip, dest_ip;
+
+	// Get ID of Switch that sent QUERY Packet
+	sw_id = this->running_sw[sw_idx]->id;
 
 	// Extract Header from Packet message
 	header = Header(que_pkt.msg);
@@ -201,7 +343,7 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 		sw = this->running_sw[i];
 		if (sw->ip_range.is_in_range(header.dest_ip)) {
 			dest_sw = sw->id;
-			dest_sw_idx = i;
+			//dest_sw_idx = i;
 			break;
 		}
 	}
@@ -209,7 +351,7 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	// If no Switch handles the dest IP, Rule is to drop the Packet.
 	if (dest_sw < 0) { 
 		act_type = AT_DROP;
-		act_val = 0;
+		act_val = CONT_PORT;
 		// Set destination IP range to include only the Header's destination IP.
 		dest_ip = IP_Range(header.dest_ip, header.dest_ip);
        	}
@@ -227,13 +369,14 @@ void Controller::handle_query(Packet &que_pkt, int sw_idx) {
 	src_ip = IP_Range(0, MAX_IP);
 	
 	// Create and send new Rule to Switch.
-	rule = new Rule(src_ip, dest_ip, MIN_PRI, act_type, act_val);
+	rule = new Rule(src_ip, dest_ip, act_type, act_val, MIN_PRI);
 	rule->serialize(ser_rule);
 	add_pkt.ptype = PT_ADD;
 	add_pkt.msg = ser_rule;
 	try {
 		this->send_pkt(add_pkt, sw_idx);
-	} catch (Cont_Exception& e) { throw; }
+		delete rule;
+	} catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_HANDLE_QUERY_FUNC, e.get_traceback(), e.get_error_code()); }
 }	
 
 /**
@@ -272,20 +415,18 @@ void Controller::handle_user_cmd() {
  * Throws: None
  */
 void Controller::list() {
-	int cur_sw_num = 0, i;
+	std::cout << "\n";
 	// List switch info
 	fprintf(stdout, CONT_PRINT_SW_INFO_HEADER, this->nswitch);
-	while (cur_sw_num != this->nswitch) {
-		for (i = 0; i < this->nswitch; i++) {
-			if (this->running_sw->swi == cur_sw_num) {
-				this->running_sw->print();
-				break;
-			}
-		}
-		cur_sw_num++;
+
+	for (int i = 0; i < this->nswitch; i++) {
+		this->running_sw[i]->print();
 	}
+	std::cout << "\n";
+
 	// List packet stats
-	this->stats.print();
+	this->stats->print();
+	std::cout << "\n";
 }
 
 /**
@@ -298,8 +439,8 @@ void Controller::list() {
  * Return Value: None
  * Throws: None
  */
-void Controller:stop() {
-	return;
+void Controller::stop() {
+	this->server->close_all();
 }
 
 /**
@@ -324,9 +465,9 @@ void Controller::run() {
 		this->init_switches();
 
 		// Prepare for polling stdin
-		stdin_fd[0].fd = STDIN_FILENO;
-		stdin_fd[0].events = POLLIN;
-		stdin_fd[0].revents = 0;
+		stdin_pfd[0].fd = STDIN_FILENO;
+		stdin_pfd[0].events = POLLIN;
+		stdin_pfd[0].revents = 0;
 
 		while(1) {
 			// Poll stdin for user command
@@ -339,18 +480,20 @@ void Controller::run() {
 			if (this->keep_running == false) {
 				break;
 			}
-		
+			
 			// Poll switches for packets, then handle each incoming packet (if any)
 			this->server->poll_clients();
 			next_ready_sw = this->server->get_next_ready_cl();
 			while (next_ready_sw != -1) {
-				this->handle_sw_pkt(next_ready_sw);
-				next_ready_sw = this->server->get_next_ready_cl();
+				this->rcv_pkt(next_ready_sw);
+				next_ready_sw = this->server->get_next_ready_cl(); 
 			}
 		}
-	} catch (CS_Skt_Exception& e) { throw Cont_Exception(); }
-	  catch (Cont_Exception& e) { throw; }
+	} catch (CS_Skt_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Cont_Exception& e) { throw Cont_Exception(e.what(), ERR_CONT_RUN_FUNC, e.get_traceback(), e.get_error_code()); }
 
-	// TODO: Clean up controller stuff if necessary
+	// Close all file descriptors on exit
 	this->stop();
+
+	std::cout << "\n" << CONT_EXIT_MSG << "\n";
 }

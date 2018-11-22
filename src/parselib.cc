@@ -5,8 +5,9 @@
  *
  * Implements basic string parsing functions such as splitting a string into tokens and converting
  * strings to integers.
- * Additionally, contains functions getting names of Switches or FIFOs given Switch ID(s) as well as
- * extracting Switch IDs from those names.
+ *
+ * Additionally, contains functions getting names of Switches, names of FIFOs given Switch ID(s) and
+ * extracting Switch IDs from Switch names.
  */
 
 
@@ -27,16 +28,17 @@
  */
 int get_sw_val(std::string const& sw_str) {
 	int sw_num;
-	std::string sw_str = SW_MODE, sw_num_substr;
+	std::string sw_num_substr;
 	try {
-		if (arg.substr(0,2) == sw_str) {
-			sw_num_substr = arg.substr(2, arg.length());
+		if (sw_str.substr(0,2) == SW_MODE) {
+			sw_num_substr = sw_str.substr(2, sw_str.length());
 			sw_num = str_to_int(sw_num_substr);
 			return sw_num;
-	} catch (Parse_Exception& e) { throw Parse_Exception(e.what(), ERR_PARSELIB_GET_SW_VAL_FUNC, e.traceback); }
+		}
+	} catch (Parse_Exception& e) { throw Parse_Exception(e.what(), ERR_PARSELIB_GET_SW_VAL_FUNC, e.get_traceback(), e.get_error_code()); }
 
 	// If first two chars of "sw_str" are not "sw", throw exception
-	throw Parse_Exception(ERR_PARSELIB_SW_NUM_FORMAT, ERR_PARSELIB_GET_SW_VAL_FUNC, EMPTY_STR);
+	throw Parse_Exception(ERR_PARSELIB_SW_NUM_FORMAT, ERR_PARSELIB_GET_SW_VAL_FUNC, 0);
 }
 
 /**
@@ -52,7 +54,7 @@ int get_sw_val(std::string const& sw_str) {
  *	- Parse_Exception
  */
 void get_sw_str(int sw_val, std::string& sw_str) {
-	if (sw_val <= 0) { throw Parse_Exception(ERR_PARSELIB_NON_POS_SW_VAL, ERR_PARSELIB_GET_SW_STR_FUNC, EMPTY STR); }
+	if (sw_val <= 0) { throw Parse_Exception(ERR_PARSELIB_NON_POS_SW_VAL, ERR_PARSELIB_GET_SW_STR_FUNC, 0); }
 	sw_str.clear();
 	sw_str += SW_MODE;
 	sw_str += std::to_string(sw_val);
@@ -76,7 +78,7 @@ int str_to_int(std::string const& str) {
 
 	output = strtol(str.c_str(), &c_ptr, 10);
 	// Throw exception if non-numeric character is found in "str"
-	if (!*c_ptr) { throw Parse_Exception(ERR_PARSELIB_NON_INT_CHAR, ERR_PARSELIB_STR_TO_INT_FUNC, EMPTY_STR); }
+	if (*c_ptr) { throw Parse_Exception(ERR_PARSELIB_NON_INT_CHAR, ERR_PARSELIB_STR_TO_INT_FUNC, 0); }
 	
 	return output;
 }
@@ -127,5 +129,6 @@ int tok_split(std::string& str, std::string delim, std::vector<std::string>& tok
  * Throws: None
  */
 void get_fifo_name(std::string& fifo_name, int writer, int reader) {
+	fifo_name.clear();
 	fifo_name = STR_FIFO_BASE + std::to_string(writer) + std::string ("-") + std::to_string(reader);
 }

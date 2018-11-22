@@ -3,6 +3,9 @@
  * File Name: a3sdn.cc
  * Student Name: Jacob Bakker
  *
+ * Implements basic main function for taking command line arguments and determining
+ * whether to start a Controller or Switch based on the first argument. The arguments
+ * are then supplied to the appropriate class which handles their parsing and execution.
  */
 
 #include "a3sdn.h"
@@ -30,21 +33,25 @@ int main(int argc, char *argv[]) {
 	if (argc < 2) { std::cout << ERR_CONT_CL_FORMAT << ERR_SW_CL_FORMAT; return 0; }
 	
 	mode_arg = argv[1];
+	// If 1st argument if "cont", attempt to start Controller
 	if (mode_arg == CONT_MODE) {
 		std::cout << "Running controller...\n";
 		try {
 			new_cont = new Controller(argc, argv);
 			new_cont->run();
-			delete [] new_cont;
-		} catch (Cont_Exception& e) { std::cout << e.what(); }
+		} catch (Cont_Exception& e) { e.print_traceback(); }
+		delete new_cont;
+
+	// If 1st argument is "swi", attempt to start Switch
 	} else if (mode_arg.substr(0,2) == SW_MODE) {
 		std::cout << "Running switch...\n";
 		try {
 			new_sw = new Switch(argc, argv);
 			new_sw->run();
-			delete [] new_sw;
-		} catch (Sw_Exception& e) { std::cout << e.what(); }
+		} catch (Sw_Exception& e) { e.print_traceback(); }
 		delete new_sw;
+
+	// Otherwise, display templates for command line arguments
 	} else {
 		std::cout << ERR_CONT_CL_FORMAT << ERR_SW_CL_FORMAT;
 	}

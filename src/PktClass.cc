@@ -3,20 +3,37 @@
  * File Name: PktClass.cc
  * Student Name: Jacob Bakker
  *
+ * Implements Packet Class for sending messages through file descriptors (e.g. FIFOs,
+ * TCP sockets).
+ *
+ * Packet instances contain both a Packet Type (e.g. PT_ADMIT) and a string message. This
+ * message is intended to be a serialized instance of some object to be sent to a Controller
+ * or Switch (e.g. in a PT_OPEN Packet, a Switch stores a serialized version of itself to be
+ * sent to a Controller).
  */
 
 #include "PktClass.h"
 
+/**
+ * Packet Constructors
+ */
 Packet::Packet(PktType ptype, std::string& msg) : ptype(ptype), msg(msg) {}
 Packet::Packet() : ptype(PT_UNINIT), msg("") {};
 
+Packet::Packet(PktType ptype) {
+	std::string empty_str("");
+
+	this->ptype = ptype;
+	this->msg = empty_str;
+}
+
 /**
- * Function: 
+ * Function: set_msg
  * -----------------------
- * Ser
+ * Set Packet message to "new_msg".
  *
  * Parameters:
- * 	- ser
+ * 	- new_msg: String to be set for Packet message.
  * Return Value: None
  * Throws: None
  */
@@ -25,39 +42,50 @@ void Packet::set_msg(std::string& new_msg) {
 }
 
 /**
- * Function: 
+ * Function: deserialize
  * -----------------------
- * Ser
+ * Deserializes Packet into Packet Type and message.
+ * Packets should be of form "<type> <msg>" where type is an integer
+ * corresponding to the Packet Type while the remaining string is
+ * considered the message.
  *
  * Parameters:
- * 	- ser
+ * 	- ser_pkt: Serialized Packet string.
  * Return Value: None
  * Throws: None
  */
 void Packet::deserialize(std::string& ser_pkt) {
 	std::string pkt_type_str (""), pkt_msg_str ("");
-	int type_end_idx, pkt_type;
+	int type_end_idx, pkt_type, null_idx;
 
-	type_end_idx = ser_pkt.find(PKT_DELIM);
-	if (type_end_idx == 1) {
-		pkt_type_str = ser_pkt.substr(0, type_end_idx);
-		pkt_type = str_to_pos_int(pkt_type_str);
-		if (pkt_type >= 0) {
-			this->ptype = static_cast<PktType>(pkt_type);
+	try {
+		type_end_idx = ser_pkt.find(PKT_DELIM);
+		if (type_end_idx == 1) {
+			pkt_type_str = ser_pkt.substr(0, type_end_idx);
+			pkt_type = str_to_int(pkt_type_str);
+			if (pkt_type >= 0) {
+				this->ptype = static_cast<PktType>(pkt_type);
+			}
+		} else {
+			throw Pkt_Exception(ERR_PKT_SER_FORMAT, ERR_PKT_DESERIALIZE_FUNC, 0);
 		}
-	}
-
-	pkt_msg_str = ser_pkt.substr(type_end_idx + 1, ser_pkt.length() - 2);
+	} catch (Pkt_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
+	  catch (Parse_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_DESERIALIZE_FUNC, e.get_traceback(), e.get_error_code()); }
+	// Remove padding
+	null_idx = ser_pkt.find('\0');
+	pkt_msg_str = ser_pkt.substr(type_end_idx + 1, null_idx - 2);
 	this->msg = pkt_msg_str;
 }
 
 /**
- * Function: 
+ * Function: serialize
  * -----------------------
- * Ser
+ * Serializes Packet attributes into string.
+ * Packet length is always fixed, so string is padded with 0s upto
+ * PKT_LEN.
  *
  * Parameters:
- * 	- ser
+ * 	- ser_pkt: Stores serialized Packet.
  * Return Value: None
  * Throws: None
  */
@@ -72,14 +100,18 @@ void Packet::serialize(std::string& ser_pkt) {
 }
 
 /**
- * Function: 
+ * Function: read_from_fd
  * -----------------------
- * Ser
+ * Given a file descriptor "fd", reads PKT_LEN bytes from "fd"
+ * and deserializes Packet string obtained.
+ * This function assumes that the next PKT_LEN bytes in "fd"
+ * correspond to a serialized Packet string.
  *
  * Parameters:
- * 	- ser
- * Return Value: None
- * Throws: None
+ * 	- fd: File descriptor.
+ * Return Value: Number of bytes read.
+ * Throws:
+ *	- Pkt_Exception
  */
 size_t Packet::read_from_fd(int fd) {
 	std::string ser_pkt(""), buffer_op("");
@@ -90,27 +122,32 @@ size_t Packet::read_from_fd(int fd) {
 	while (total_read < PKT_LEN + 1) {
 		bytes_read = read(fd, buffer, PKT_LEN + 1);
 		if (bytes_read < 0) {
-			throw Pkt_Exception(ERR_PKT_READ);
+			throw Pkt_Exception(ERR_PKT_READ, ERR_PKT_READ_FD_FUNC, 0);
+		// If read returns 0, throw error indicating closed fd
 		} else if (bytes_read == 0) {
-			break;
+			throw Pkt_Exception(ERR_PKT_READ_CLOSED_WRITE_END, ERR_PKT_READ_FD_FUNC, ERR_CODE_PKT_CLOSED_FD);
 		}
 		total_read += bytes_read;
+		// Save read bytes to string object.
 		buffer_op = buffer;
 		ser_pkt += buffer_op;
 		memset(buffer, 0, PKT_LEN + 1);
 	}
+	// Try to deserialize read string
+	try {
+		this->deserialize(ser_pkt);
+	} catch (Pkt_Exception& e) { throw Pkt_Exception(e.what(), ERR_PKT_READ_FD_FUNC, e.get_traceback(), e.get_error_code()); }
 	
-	this->deserialize(ser_pkt);
 	return total_read;
 }
 
 /**
- * Function: 
+ * Function: write_to_fd
  * -----------------------
- * Ser
+ * Given a file descriptor "fd", writes serialized Packet to fd.
  *
  * Parameters:
- * 	- ser
+ * 	- fd: File descriptor.
  * Return Value: None
  * Throws: None
  */
@@ -120,85 +157,15 @@ size_t Packet::write_to_fd(int fd) {
 
 	this->serialize(ser_pkt);
 	while(total_wrtn < PKT_LEN + 1) {
-		num_wrtn = write(fd, &ser_pkt.c_str()[total_wrtn], (ser_pkt.length() + 1 - total_wrtn));
+		bytes_wrtn = write(fd, &ser_pkt.c_str()[total_wrtn], (ser_pkt.length() + 1 - total_wrtn));
 		if (bytes_wrtn < 0) {
-			throw Pkt_Exception(ERR_PKT_WRITE);
+			// Check if read end of fd is closed, otherwise throw generic error
+			if (errno == EPIPE) { throw Pkt_Exception(ERR_PKT_WRITE_CLOSED_READ_END, ERR_PKT_WRITE_FD_FUNC, ERR_CODE_PKT_CLOSED_FD); }
+			else { throw Pkt_Exception(ERR_PKT_WRITE, ERR_PKT_WRITE_FD_FUNC, 0); }
 		} else if (bytes_wrtn == 0) {
 			break;
 		}
+		total_wrtn += bytes_wrtn;
 	}
 	return total_wrtn;
-}
-
-/**
- * Function: 
- * -----------------------
- * Ser
- *
- * Parameters:
- * 	- ser
- * Return Value: None
- * Throws: None
- */
-void Packet::print_log(int src, int dest, PktLogMode mode) {
-	std::string src_str(""), dest_str("");
-	Header header;
-	Switch swi;
-	Rule rule;
-
-	if (mode == PKT_LOG_RCV_MODE) {
-		std::cout << PKT_LOG_RCV_STR;
-	} else {
-		std::cout << PKT_LOG_SEND_STR;
-	}
-
-	get_src_dest_str(src, src_str);
-	get_src_dest_str(dest, dest_str);
-	fprintf(stdout, PKT_LOG_SRC_DEST_STR, src_str.c_str(), dest_str.c_str());
-	
-	switch(this->ptype) {
-		case PT_OPEN:
-			std::cout  << PTYPE_STR_OPEN;
-			swi = Switch(this->msg);
-			swi.print();
-			break;
-		case PT_ACK:
-			std::cout << PTYPE_STR_ACK << "\n";
-			break;
-		case PT_QUERY:
-			std::cout << PTYPE_STR_QUERY;
-			header = Header(this->msg);
-			header.print();
-			break;
-		case PT_ADD:
-			std::cout << PTYPE_STR_ADD;
-			rule = Rule(this->msg);
-			rule.print();
-			break;
-		case PT_RELAY:
-			std::cout << PTYPE_STR_RELAY;
-			header = Header(this->msg);
-			header.print();
-			break;
-	}
-}
-
-/**
- * Function: 
- * -----------------------
- * Ser
- *
- * Parameters:
- * 	- ser
- * Return Value: None
- * Throws: None
- */
-void Packet::get_src_dest_str(int src, std::string& src_str) {
-	std::string sw_str("");
-	if (src == 0) {
-		src_str.assign(PKT_LOG_CONT_STR);
-	} else {
-		get_sw_str(src, sw_str);
-		src_str.assign(sw_str);
-	}
 }

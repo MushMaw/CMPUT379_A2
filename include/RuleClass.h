@@ -1,3 +1,17 @@
+/**
+ * CMPUT 379 - Assignment 3
+ * File Name: RuleClass.h
+ * Student Name: Jacob Bakker
+ *
+ * Implements class for pattern-action Rules to be stored in a Switch's flow table.
+ *
+ * Rules can be created either by supplying all required attributes (e.g. source/destination
+ * IP ranges, action type) or with a serialized Rule string.
+ *
+ * Implements methods for matching Header objects to Rules, incrementing packet counts, and
+ * printing a formatted message containing the Rule's attributes.
+ */
+
 #if !defined(A2_RULECLASS_H)
 #define A2_RULECLASS_H
 
@@ -13,16 +27,23 @@
 #define RULE_DELIM std::string (" ")
 #define HEADER_DELIM std::string(" ")
 
+#define RULE_PRINT_IP_RANGES "src= %s, dest= %s, "
+#define RULE_PRINT_FORWARD_TYPE "action= FORWARD:%d, "
+#define RULE_PRINT_DROP_TYPE "action= DROP, "
+#define RULE_PRINT_PRIORITY_PKT_COUNT "pri= %d, pktCount= %d"
+
+#define ERR_RULE_DESERIALIZE_FUNC std::string("Rule::deserialize()")
+
+#define ERR_RULE_SER_FORMAT "Invalid serialized Rule string\n"
+
 enum ActType {AT_FORWARD, AT_DROP};
 
-class Rule_Exception : public std::runtime_error {
+class Rule_Exception : public Traceback_Exception {
 	public:
-		Rule_Exception(const char* message) : std::runtime_error(message){}
-};
-
-class Header_Exception : public std::runtime_error {
-	public:
-		Header_Exception(const char* message) : std::runtime_error(message){}
+		Rule_Exception(const char* msg, const std::string cur_func, const std::string func_traceback, int error_code) 
+		: Traceback_Exception(msg, cur_func, func_traceback, error_code) {}
+		Rule_Exception(const char* msg, const std::string cur_func, int error_code)
+		: Traceback_Exception(msg, cur_func, error_code) {}
 };
 
 class Rule {
@@ -32,15 +53,12 @@ class Rule {
 		ActType act_type;
 		SwPort act_val;
 
-		Rule(std::string serial_rule);
-		Rule(IP_Range src_ip, IP_Range dest_ip, int pri, ActType act_type, SwPort act_val) 
-			: src_ip(src_ip),
-			  dest_ip(dest_ip),
-			  pri(pri),
-			  act_type(act_type),
-			  act_val(act_val) {}
+		Rule();
+		Rule(std::string& serial_rule);
+		Rule(IP_Range src_ip, IP_Range dest_ip, ActType act_type, SwPort act_val, int pri);
 
 		void serialize(std::string& ser_rule);
+		void deserialize(std::string& ser_rule);
 		bool is_match(Header& header);
 		void print();
 		void add_pkt();

@@ -3,8 +3,11 @@
  * File Name: TimerClass.cc
  * Student Name: Jacob Bakker
  *
- * Implements basic Timer in milliseconds, allowing for a target number of milliseconds to be
- * set and for querying whether that target has been reached.
+ * Implements a basic millisecond Timer.
+ *
+ * The Timer can be started with a target duration value given, allowing
+ * for a program to query the Timer about whether the target duration has
+ * been reached since having started it.
  */
 
 #include "TimerClass.h"
@@ -33,7 +36,7 @@ Timer::Timer(int target_duration) {
  * Return Value: None
  * Throws: None
  */
-void start(int target_duration) {
+void Timer::start(int target_duration) {
 	this->start_time = HR_Clock::now();
 	this->target_duration = target_duration;
 }
@@ -48,15 +51,17 @@ void start(int target_duration) {
  * Return Value: True if "target_duration" has been reached, false otherwise.
  * Throws: None
  */
-bool at_target_duration() {
-	HR_Clock end_time;
+bool Timer::at_target_duration() {
+	HR_Clock::time_point end_time;
 	millisec ms_dur;
-	duration raw_dur;
+	raw_duration raw_dur;
+	int ms;
 
         end_time = HR_Clock::now();
-	raw_dur = end_time - this->start_time;
+	raw_dur = std::chrono::duration_cast<raw_duration>(end_time - this->start_time);
 	ms_dur = std::chrono::duration_cast<millisec>(raw_dur);
+	ms = ms_dur.count();
 
-	if (ms_dur > this->target_duration) { return true; }
+	if (ms > this->target_duration) { return true; }
 	else { return false; }
 }
